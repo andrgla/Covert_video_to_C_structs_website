@@ -1,6 +1,7 @@
 import sys
 import os
 from PIL import Image
+import re
 
 # ===============================================
 # FILTER DARK PIXELS FUNCTION
@@ -197,6 +198,9 @@ def generate_c_struct_array(frame_data_list, grid_width, grid_height, c_output_p
         f.write("".join(c_code))
     print(f"Successfully saved C struct array to '{c_output_path}'")
 
+def extract_number(filename):
+    match = re.search(r'(\d+)', filename)
+    return int(match.group(1)) if match else -1
 
 if __name__ == "__main__":
     if len(sys.argv) == 2 and os.path.isdir(sys.argv[1]):
@@ -208,7 +212,10 @@ if __name__ == "__main__":
         grid_width = 18
         grid_height = 11
         
-        filenames = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(".png")])
+        filenames = sorted(
+            [f for f in os.listdir(input_dir) if f.lower().endswith(".png")],
+            key=extract_number
+        )
         for i, filename in enumerate(filenames):
             input_file = os.path.join(input_dir, filename)
             output_file = os.path.join(output_dir, filename)
@@ -224,7 +231,7 @@ if __name__ == "__main__":
                 frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
-                c_output_path="frames_as_c_code/tester.c",
+                c_output_path="frames_as_c_code/testerigjen.c",
                 struct_variable_name="animation_frames"
             )
     elif len(sys.argv) == 4:
