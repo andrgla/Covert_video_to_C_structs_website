@@ -112,8 +112,8 @@ def generate_c_struct(pixel_data, grid_width, grid_height, c_output_path, struct
         '    uint8_t brightness_levels[ANIMATION_MAX_ACTIVE_PIXELS];\n',
         '    uint8_t frame_number; // Index of this frame in an animation\n',
         '    uint8_t num_pixels;\n',
-        '} AnimationFrame;\n\n',
-        f'AnimationFrame const {struct_variable_name}[1] = {{\n',
+        '} animation_frame;\n\n',
+        f'animation_frame const {struct_variable_name}[1] = {{\n',
         '    {\n',
         f'        .frame_number = {frame_number},\n',
         f'        .num_pixels = {len(pixels)},\n',
@@ -159,8 +159,8 @@ def generate_c_struct_array(frame_data_list, grid_width, grid_height, c_output_p
         '    uint8_t brightness_levels[ANIMATION_MAX_ACTIVE_PIXELS];\n',
         '    uint8_t frame_number; // Index of this frame in an animation\n',
         '    uint8_t num_pixels;\n',
-        '} AnimationFrame;\n\n',
-        f'AnimationFrame const {struct_variable_name}[{len(frame_data_list)}] = {{\n'
+        '} animation_frame;\n\n',
+        f'animation_frame const {struct_variable_name}[{len(frame_data_list)}] = {{\n'
     ]
     
     for small_pixelated, frame_number in frame_data_list:
@@ -231,8 +231,8 @@ if __name__ == "__main__":
                 frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
-                c_output_path="frames_as_c_code/testerigjen.c",
-                struct_variable_name="animation_frames"
+                c_output_path="frames_as_c_code/swirling_circle_animation.c",
+                struct_variable_name="swirling_circle_animation"
             )
     elif len(sys.argv) == 4:
         # Process single file with frame number
