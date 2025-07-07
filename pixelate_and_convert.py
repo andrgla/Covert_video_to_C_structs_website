@@ -226,6 +226,7 @@ if __name__ == "__main__":
                 frame_data_list.append((small_pixelated, i))
         
         # Generate C struct array
+        
         if frame_data_list:
             generate_c_struct_array(
                 frame_data_list,

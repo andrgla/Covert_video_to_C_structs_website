@@ -17,3 +17,7 @@ This tool helps you convert PNG images (or a sequence of images) into C structs 
 ## Usage
 
 ### 1. Convert a Single Image
+To convert a single image
+
+### 2. Convert Multiple Images
+Run "python3 pixelate_and_convert.py [foldername]"
