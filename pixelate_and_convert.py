@@ -2,21 +2,34 @@ import sys
 import os
 from PIL import Image
 
+# Filtering function
+
+def filter_dark_pixels(small_pixelated, grid_width, grid_height, max_pixels=150, threshold=10):
+    pixels = []
+    for y in range(grid_height):
+        for x in range(grid_width):
+            val = small_pixelated.getpixel((x, y))
+            if isinstance(val, int) and val > 0:
+                pixels.append((x, y))
+    if len(pixels) > max_pixels:
+        for x, y in pixels:
+            val = small_pixelated.getpixel((x, y))
+            if isinstance(val, int) and val <= threshold:
+                small_pixelated.putpixel((x, y), 0)
+    return small_pixelated
+
+
+# Generate C struct for a single frame, using the filtering function
 
 def generate_c_struct(pixel_data, grid_width, grid_height, c_output_path, struct_variable_name, frame_number):
-    """Generate a C struct instance from pixelated image data."""
+    pixel_data = filter_dark_pixels(pixel_data, grid_width, grid_height)
     pixels = []
     
-    # Extract non-black pixels
     for y in range(grid_height):
         for x in range(grid_width):
             brightness = pixel_data.getpixel((x, y))
             if brightness > 0:
                 pixels.append({'x': x, 'y': y, 'brightness': brightness})
-
-    # If more than 150 active pixels, filter out pixels with brightness <= 10
-    if len(pixels) > 150:
-        pixels = [p for p in pixels if p['brightness'] > 10]
 
     # Build C code
     c_code = [
@@ -60,10 +73,11 @@ def generate_c_struct(pixel_data, grid_width, grid_height, c_output_path, struct
     
     print(f"Successfully saved C struct data to '{c_output_path}'")
 
+# Process image function
+# Center, convert to grayscale and pixelate
 
 def process_image(input_path, output_path, grid_width=18, grid_height=11, cell_width=50, 
                   struct_variable_name="animation_frame", frame_number=0, return_pixelated=False):
-    """Process an image: center, convert to grayscale, pixelate, and save."""
     try:
         original_img = Image.open(input_path)
     except FileNotFoundError:
@@ -74,7 +88,7 @@ def process_image(input_path, output_path, grid_width=18, grid_height=11, cell_w
         return
 
     # Setup canvas
-    cell_height = int(cell_width * 1.8)
+    cell_height = int(cell_width * 1.6)
     canvas_width = grid_width * cell_width
     canvas_height = grid_height * cell_height
     
@@ -102,19 +116,8 @@ def process_image(input_path, output_path, grid_width=18, grid_height=11, cell_w
     small_pixelated = background.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
     print(f"Pixelated the image down to {grid_width}x{grid_height} pixels.")
 
-    # Filter out darkest pixels if more than 150 active pixels
-    # (to match the C struct filtering logic)
-    pixels = []
-    for y in range(grid_height):
-        for x in range(grid_width):
-            val = small_pixelated.getpixel((x, y))
-            if isinstance(val, int) and val > 0:
-                pixels.append((x, y))
-    if len(pixels) > 150:
-        for x, y in pixels:
-            val = small_pixelated.getpixel((x, y))
-            if isinstance(val, int) and val <= 10:
-                small_pixelated.putpixel((x, y), 0)
+    # Apply filtering to output image as well
+    small_pixelated = filter_dark_pixels(small_pixelated, grid_width, grid_height)
 
     final_image = small_pixelated.resize((canvas_width, canvas_height), Image.Resampling.NEAREST)
     print("Scaled the pixelated image up for viewing.")
@@ -153,6 +156,8 @@ def generate_c_struct_array(frame_data_list, grid_width, grid_height, c_output_p
     ]
     
     for small_pixelated, frame_number in frame_data_list:
+        # Apply filtering to match output image
+        small_pixelated = filter_dark_pixels(small_pixelated, grid_width, grid_height)
         # Gather pixel data
         pixels = []
         for y in range(grid_height):
@@ -160,10 +165,6 @@ def generate_c_struct_array(frame_data_list, grid_width, grid_height, c_output_p
                 brightness = small_pixelated.getpixel((x, y))
                 if brightness > 0:
                     pixels.append({'x': x, 'y': y, 'brightness': brightness})
-        
-        # If more than 150 active pixels, filter out pixels with brightness <= 10
-        if len(pixels) > 150:
-            pixels = [p for p in pixels if p['brightness'] > 10]
         
         c_code.extend([
             '    {\n',
@@ -216,7 +217,7 @@ if __name__ == "__main__":
                 frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
-                c_output_path="frames_as_c_code/all_frames_testing_cutting_down_active pixels.c",
+                c_output_path="frames_as_c_code/tester.c",
                 struct_variable_name="animation_frames"
             )
     elif len(sys.argv) == 4:
