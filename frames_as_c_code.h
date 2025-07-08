@@ -8,7 +8,6 @@
 // ============================================================================
 
 #define ANIMATION_MAX_ACTIVE_PIXELS (18 * 11)
-
 #define ANIMATION_MATRIX_WIDTH 18
 #define ANIMATION_MATRIX_HEIGHT 11
 
@@ -28,8 +27,9 @@ typedef struct {
 
 // Declaration for the animation data, allowing it to be accessed from other files.
 extern const animation_frame swirling_circle_animation[26];
-extern const animation_frame wake_up_blob_animation[22];
+// extern const animation_frame wake_up_blob_animation[22]; // Definition not provided
 extern const animation_frame all_icons[4];
-extern const animation_frame animation_frames[22];
+// extern const animation_frame animation_frames[22]; // Definition not provided
+extern const animation_frame last_two[2];
 
-#endif // ANIMATIONS_H
+#endif // FRAMES_AS_C_CODE_H

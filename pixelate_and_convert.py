@@ -239,7 +239,7 @@ if __name__ == "__main__":
                 frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
-                c_output_path="frames_as_c_code/icons_struct.c",
+                c_output_path="frames_as_c_code/icons_struct_last_two.c",
                 struct_variable_name="all_icons"
             )
 

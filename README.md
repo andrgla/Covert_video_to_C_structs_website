@@ -34,3 +34,7 @@ The generated images will appear in the òutput_images` file
 **View generated C code**
 To view the generated C-code
 
+Compile: `gcc -o test_animation -I. test_c_struct.c frames_as_c_code/*.c -DTEST_ANIMATIONS_MAIN`
+Run: `./test_animation <struct_name>`
+
+
