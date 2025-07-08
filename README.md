@@ -28,4 +28,9 @@ To convert multiple images to an array of frames in one struct, thus making an a
 
 ### 2. Testing 
 
+**View generated frames as pixelated grayscale images**
+The generated images will appear in the òutput_images` file
+
+**View generated C code**
+To view the generated C-code
 

@@ -8,12 +8,12 @@
 // ============================================================================
 
 #define ANIMATION_MAX_ACTIVE_PIXELS (18 * 11)
-#define ANIMATION_GRID_WIDTH 18
+
 #define ANIMATION_MATRIX_WIDTH 18
 #define ANIMATION_MATRIX_HEIGHT 11
 
 // Macro to convert 2D coordinates to a 1D array index.
-#define ANIMATION_PIXEL_INDEX(y, x) ((y) * ANIMATION_GRID_WIDTH + (x))
+#define ANIMATION_PIXEL_INDEX(y, x) ((y) * ANIMATION_MATRIX_WIDTH + (x))
 
 // The struct definition for a single animation frame.
 typedef struct {
