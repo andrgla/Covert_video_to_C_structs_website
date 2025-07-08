@@ -16,10 +16,7 @@ This tool helps you convert PNG images (or a sequence of images) into C structs 
 
 ## Usage
 
-### 1. Convert a Single Image
-To convert a single image
-
-### 2. Convert Multiple Images
+### 1. Converting Images
 To convert multiple images to an array of frames in one struct, thus making an animaton, it is important to **put all input images in one folder and name them in an alphabetich/numeric order.** 
 
 **In the script:**
@@ -28,3 +25,7 @@ To convert multiple images to an array of frames in one struct, thus making an a
 
 **In the terminal:**
 - Run the command `python3 pixelate_and_convert.py [name_of_folder_containing_input_pictures]` in terminal
+
+### 2. Testing 
+
+
