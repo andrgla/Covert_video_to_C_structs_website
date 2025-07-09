@@ -29,8 +29,6 @@ typedef struct {
 extern const animation_frame swirling_circle_animation[26];
 // extern const animation_frame wake_up_blob_animation[22]; // Definition not provided
 extern const animation_frame all_icons[4];
-// extern const animation_frame animation_frames[22]; // Definition not provided
-extern const animation_frame last_two[2];
 
 #endif // FRAMES_AS_C_CODE_H
 extern const animation_frame another_test[4];
