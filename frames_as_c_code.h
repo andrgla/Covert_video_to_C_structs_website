@@ -27,9 +27,8 @@ typedef struct {
 
 // Declaration for the animation data, allowing it to be accessed from other files.
 extern const animation_frame swirling_circle_animation[26];
-// extern const animation_frame wake_up_blob_animation[22]; // Definition not provided
 extern const animation_frame all_icons[4];
 
 #endif // FRAMES_AS_C_CODE_H
-extern const animation_frame another_test[4];
-extern const animation_frame another_test[2];
+
+extern const animation_frame wakeywakey[22];

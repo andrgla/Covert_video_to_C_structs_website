@@ -18,7 +18,6 @@ typedef struct {
 animation_t animations[] = {
     {"swirling_circle_animation", swirling_circle_animation, 26},
     {"all_icons", all_icons, 4},
-    {"last_two", last_two, 2}
 };
 int num_animations = sizeof(animations) / sizeof(animations[0]);
 
