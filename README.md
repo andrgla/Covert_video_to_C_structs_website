@@ -28,9 +28,11 @@ After doing this will one C file in the `frames_as_c_code` folder appear, and mu
 ### 2. Testing 
 
 **View generated frames as pixelated grayscale images**
+
 The generated images will appear in the òutput_images` file
 
 **View generated C code**
+
 To view the generated C-code in the terminal, a 
 
 Compile: `gcc -o test_animation -I. test_c_struct.c frames_as_c_code/*.c -DTEST_ANIMATIONS_MAIN`
@@ -38,6 +40,7 @@ Run: `./test_animation <struct_name>`
 
 ## Script Details
 **Image processing**
+
 `filter_dark_pixels` is an image processing function that filters out dark noise and makes a smoother gradient between the darkest level (led turned off) and the remaining darkerst active pixels. The function gets active when .num_pixels is above a certain level. 
 
 
