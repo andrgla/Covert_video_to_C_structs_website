@@ -33,3 +33,5 @@ extern const animation_frame all_icons[4];
 extern const animation_frame last_two[2];
 
 #endif // FRAMES_AS_C_CODE_H
+extern const animation_frame another_test[4];
+extern const animation_frame another_test[2];

@@ -32,7 +32,7 @@ To convert multiple images to an array of frames in one struct, thus making an a
 The generated images will appear in the òutput_images` file
 
 **View generated C code**
-To view the generated C-code
+To view the generated C-code in the terminal, a 
 
 Compile: `gcc -o test_animation -I. test_c_struct.c frames_as_c_code/*.c -DTEST_ANIMATIONS_MAIN`
 Run: `./test_animation <struct_name>`

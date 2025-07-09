@@ -7,19 +7,33 @@ import re
 # FILTER DARK PIXELS FUNCTION
 # ===============================================
 # Filter dark pixels from a pixelated image
-def filter_dark_pixels(small_pixelated, grid_width, grid_height, max_pixels=150, threshold=10):
-    pixels = []
+def filter_dark_pixels(small_pixelated, grid_width, grid_height, max_pixels=150, threshold=10, dimming_threshold=30):
+    """
+    Filters and dims pixels based on brightness thresholds.
+
+    - Pixels with brightness <= `threshold` are set to 0.
+    - Pixels with brightness between `threshold` and `dimming_threshold` are dimmed.
+    """
+    # Create a copy to avoid modifying the original image directly
+    filtered_image = small_pixelated.copy()
+
     for y in range(grid_height):
         for x in range(grid_width):
-            val = small_pixelated.getpixel((x, y))
-            if isinstance(val, int) and val > 0:
-                pixels.append((x, y))
-    if len(pixels) > max_pixels:
-        for x, y in pixels:
-            val = small_pixelated.getpixel((x, y))
-            if isinstance(val, int) and val <= threshold:
-                small_pixelated.putpixel((x, y), 0)
-    return small_pixelated
+            brightness = filtered_image.getpixel((x, y))
+
+            if not isinstance(brightness, int) or brightness == 0:
+                continue
+
+            if brightness <= threshold:
+                # Filter out the weakest pixels
+                filtered_image.putpixel((x, y), 0)
+            elif threshold < brightness <= dimming_threshold:
+                # Dim the pixels in the specified range
+                new_brightness = brightness - (brightness**2 * (1 / dimming_threshold))
+                # Ensure brightness doesn't go below 0
+                filtered_image.putpixel((x, y), int(max(0, new_brightness)))
+
+    return filtered_image
 
 # ===============================================
 # PROCESS IMAGE FUNCTION
@@ -239,8 +253,8 @@ if __name__ == "__main__":
                 frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
-                c_output_path="frames_as_c_code/icons_struct_last_two.c",
-                struct_variable_name="all_icons"
+                c_output_path="frames_as_c_code/another_test.c",
+                struct_variable_name="another_test"
             )
 
     elif len(sys.argv) == 4:
