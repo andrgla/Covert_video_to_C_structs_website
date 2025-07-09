@@ -2,6 +2,7 @@ import sys
 import os
 from PIL import Image
 import re
+import math
 
 # ===============================================
 # FILTER DARK PIXELS FUNCTION
@@ -29,6 +30,31 @@ def filter_dark_pixels(small_pixelated, grid_width, grid_height, max_pixels=150,
                 filtered_image.putpixel((x, y), int(max(0, new_brightness)))
 
     return filtered_image
+
+# ===============================================
+# ENHANCE CONTRAST FUNCTION
+# ===============================================
+def enhance_contrast_if_many_active(frames, grid_width=18, grid_height=11, on=True):
+    """
+    Optionally applies contrast enhancement to frames if the average number of active pixels is high.
+    If 'on' is False, this function does nothing and returns the frames unchanged.
+    """
+    if not on:
+        return frames
+
+    if on is True:
+        k = 0.025  # Steepness (weaker contrast, half as strong as before)
+        center = 150.0
+        for img in frames:
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    val = img.getpixel((x, y))
+                    x_f = float(val)
+                    sigmoid = 1.0 / (1.0 + math.exp(-k * (x_f - center)))
+                    new_val = int(sigmoid * 255.0)
+                    img.putpixel((x, y), new_val)
+    return frames
+
 
 # ===============================================
 # PROCESS IMAGE FUNCTION
@@ -96,11 +122,18 @@ def generate_c_struct_array(frame_data_list, grid_width, grid_height, c_output_p
     ]
 
     for small_pixelated, frame_number in frame_data_list:
+        # Apply dark pixel filtering
         small_pixelated = filter_dark_pixels(small_pixelated, grid_width, grid_height)
+        
+        # Apply contrast enhancement if needed (for individual frame processing)
+        # This is a backup in case the main enhancement wasn't applied
+        frame_list = [small_pixelated]
+        enhanced_frame = enhance_contrast_if_many_active(frame_list, grid_width, grid_height)[0]
+        
         pixels = []
         for y in range(grid_height):
             for x in range(grid_width):
-                brightness = small_pixelated.getpixel((x, y))
+                brightness = enhanced_frame.getpixel((x, y))
                 if brightness > 0:
                     pixels.append({'x': x, 'y': y, 'brightness': brightness})
 
@@ -168,6 +201,16 @@ if __name__ == "__main__":
                 frame_data_list.append((small_pixelated, i))
 
         if frame_data_list:
+            # Apply contrast enhancement if many pixels are active
+            print("Applying contrast enhancement if needed...")
+            frame_images = [frame_data[0] for frame_data in frame_data_list]
+            enhanced_frames = enhance_contrast_if_many_active(frame_images, grid_width, grid_height)
+            
+            # Update frame_data_list with enhanced frames
+            enhanced_frame_data_list = []
+            for i, (_, frame_number) in enumerate(frame_data_list):
+                enhanced_frame_data_list.append((enhanced_frames[i], frame_number))
+            
             # Prompt user for the struct and file name
             struct_name = input("Enter the name for your C struct and file: ")
             
@@ -175,7 +218,7 @@ if __name__ == "__main__":
             c_output_path = f"frames_as_c_code/{struct_name}.c"
             
             generate_c_struct_array(
-                frame_data_list,
+                enhanced_frame_data_list,
                 grid_width=grid_width,
                 grid_height=grid_height,
                 c_output_path=c_output_path,

@@ -4,24 +4,6 @@
 #include <stdlib.h>
 
 // ============================================================================
-// Animation Info Struct
-// ============================================================================
-typedef struct {
-    const char* name;
-    const animation_frame* frames;
-    int num_frames;
-} animation_t;
-
-// ============================================================================
-// Animation Registry
-// ============================================================================
-animation_t animations[] = {
-    {"swirling_circle_animation", swirling_circle_animation, 26},
-    {"all_icons", all_icons, 4},
-};
-int num_animations = sizeof(animations) / sizeof(animations[0]);
-
-// ============================================================================
 // Print a single animation frame to the console
 // ============================================================================
 void print_animation_frame(const animation_frame* frame, const char* frame_name) {
@@ -60,7 +42,6 @@ void print_animation_frame(const animation_frame* frame, const char* frame_name)
         }
         printf("\n");
     }
-
     printf("\n=== End of %s ===\n\n", frame_name);
 }
 
@@ -78,37 +59,42 @@ void print_animation_frames(const animation_frame* frames, int num_frames, const
 }
 
 // ============================================================================
+// Extern declarations for all animations
+// This replaces the manual registry
+// ============================================================================
+extern const animation_frame swirling_circle_animation[];
+extern const animation_frame all_icons[];
+extern const animation_frame wakeywakey[];
+extern const animation_frame another_test[];
+
+
+// ============================================================================
 // Main function to select and test animations
 // ============================================================================
 #ifdef TEST_ANIMATIONS_MAIN
 int main(int argc, char *argv[]) {
-    // Check for correct number of arguments (now accepts 2 or 3)
-    if (argc < 2 || argc > 3) {
-        fprintf(stderr, "Usage: %s <struct_name> [display_name]\n", argv[0]);
-        fprintf(stderr, "The display_name is optional.\n");
-        fprintf(stderr, "Available animations:\n");
-        for (int i = 0; i < num_animations; i++) {
-            fprintf(stderr, " - %s\n", animations[i].name);
-        }
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <struct_name> <num_frames>\n", argv[0]);
+        fprintf(stderr, "Example: %s swirling_circle_animation 26\n", argv[0]);
         return 1;
     }
 
     const char* struct_name = argv[1];
-    // Use the struct_name as the display_name if one isn't provided.
-    const char* display_name = (argc == 3) ? argv[2] : struct_name;
+    int num_frames = atoi(argv[2]);
     const animation_frame* selected_frames = NULL;
-    int selected_num_frames = 0;
 
-    for (int i = 0; i < num_animations; i++) {
-        if (strcmp(struct_name, animations[i].name) == 0) {
-            selected_frames = animations[i].frames;
-            selected_num_frames = animations[i].num_frames;
-            break;
-        }
+    if (strcmp(struct_name, "swirling_circle_animation") == 0) {
+        selected_frames = swirling_circle_animation;
+    } else if (strcmp(struct_name, "all_icons") == 0) {
+        selected_frames = all_icons;
+    } else if (strcmp(struct_name, "wakeywakey") == 0) {
+        selected_frames = wakeywakey;
+    } else if (strcmp(struct_name, "another_test") == 0) {
+        selected_frames = another_test;
     }
 
     if (selected_frames) {
-        print_animation_frames(selected_frames, selected_num_frames, display_name);
+        print_animation_frames(selected_frames, num_frames, struct_name);
     } else {
         fprintf(stderr, "Error: Unknown struct name '%s'\n", struct_name);
         return 1;
