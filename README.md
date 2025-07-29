@@ -1,20 +1,29 @@
-# Convert_from_images_to_animations_in_C
+# Image & Video to C Animation Converter 🎞️➡️💻
 ## Pixelate Images and Convert to C Animation Structs
 
-This tool helps you convert PNG images (or a sequence of images) into C structs suitable for use in embedded animation projects. It pixelates images to a fixed grid, extracts brightness data, and generates C code for animation frames.
+This tool helps you convert videos or images into C structs suitable for use in embedded animation projects. It pixelates images to a fixed grid, extracts brightness data, and generates C code for animation frames.
 
 ---
 
-### Features
-
-- **Pixelate images** to a fixed grid (default: 18x11).
+### ✨ Features
+- **Video Slicing:** Automatically extracts frames from `.mp4` and `.mov` files at a specified FPS.
+- **Pixelation & Grayscaling** Converts frames into a low-resolution grayscale format to a fixed grid (default: 18x11).
+- **Smart Filtering:** Includes functions to enhance contrast and reduce dark-pixel noise.
 - **Batch process** a directory of PNGs into a C array of animation frames.
-- **Single image** conversion supported.
-- **Outputs C structs** ready for use in microcontroller or embedded projects.
+- **C Code Generation:** Outputs a `.c` file with an array of `animation_frame structs`, ready to be used in your embedded project.
+- **Visual Feedback:** Generates preview images of the processed frames in the `output_images` folder.
 
 ---
+## 🚀 Getting Started
 
-## Usage
+Make sure you have Python 3 installed. Then, install the necessary packages for converting a `.mov` file to a `.mp4` file using pip, it might also need you to install FFmpeg using homebrew:
+
+```bash
+pip install opencv-python Pillow
+```
+
+
+## ⚙️ Usage
 
 ### 1: From video
 Upload a video in the `input_video` folder and run the following command:
