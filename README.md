@@ -1,6 +1,4 @@
 # Image & Video to C Animation Converter 🎞️➡️💻
-## Pixelate Images and Convert to C Animation Structs
-
 This tool helps you convert videos or images into C structs suitable for use in embedded animation projects. It pixelates images to a fixed grid, extracts brightness data, and generates C code for animation frames.
 
 ---
