@@ -17,8 +17,8 @@ This tool helps you convert PNG images (or a sequence of images) into C structs 
 ## Usage
 
 ### 1: From video
-Upload a video in the 'input_video' folder and run the following command:
-python3 pixelate_and_convert.py input_videos/<input_video_filename> --fps 30 --struct-name <struct_name>
+Upload a video in the `input_video` folder and run the following command:
+`python3 pixelate_and_convert.py input_videos/<input_video_filename> --fps 30 --struct-name <struct_name>`
 
 Be mindful that it might take 10 seconds until it displays in the terminal that it is working, so be patient.
 
