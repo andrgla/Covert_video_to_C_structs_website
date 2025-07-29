@@ -32,29 +32,24 @@ pip install opencv-python Pillow
 ## ⚙️ Usage
 
 ### 1: From video
-Upload a video in the `input_video` folder and run the following command:
+Upload a video in the `input_videos/` folder and run the following command:
 ```bash
 python3 pixelate_and_convert.py input_videos/<input_video_filename> --fps 30 --struct-name <struct_name>
 ```
-Shortly after will a `.C` file with the chosen struct name appear in the `frames_as_c_code/` folder. 
+Shortly after will a `.C` file with the chosen struct name appear in the `frames_as_c_code/` folder, and multiple images of the pixelated grayscale input images appear in the `output_images/` folder. 
 >[!Note]
 >Video processing can take a few moments to start. Please be patient after running the command!
 
 
 ### 1. Converting Images
-To convert multiple images to an array of frames in one struct, thus making an animaton, it is important to **put all input images in one folder and name them in an alphabetich/numeric order.** 
+Upload a video in the `input_images/`. To convert multiple images to an array of frames in one struct, thus making an animaton, it is important to **put all input images in one folder and name them in an alphabetich/numeric order.** Then run the command 
 
-**In the terminal:**
-- Run the command `python3 pixelate_and_convert.py <folder_containing_input_pictures>` in terminal
-- Then you will be asked to enter the name for your C struct and file, do so
-
-After doing this will one C file in the `frames_as_c_code` folder appear, and multiple images of the pixelated grayscale input images appear in the `output_images` folder
+```bash
+python3 pixelate_and_convert.py input_images/<folder_containing_input_pictures>
+```
+Then you will be asked to enter the name for your C struct and file, do so. After doing this will one C file in the `frames_as_c_code/` folder appear, and multiple images of the pixelated grayscale input images appear in the `output_images/` folder.
 
 ### 2. Testing 
-
-**View generated frames as pixelated grayscale images**
-
-The generated images will appear in the òutput_images` file
 
 **View generated C code**
 
