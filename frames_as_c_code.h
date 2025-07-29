@@ -43,3 +43,4 @@ extern const animation_frame bolle_sitting_still_animation[45];
 extern const animation_frame try_again_bolle[45];
 extern const animation_frame bolle_high_fps[131];
 extern const animation_frame bolle_high_fps[183];
+extern const animation_frame dance_animation_30fps[240];
