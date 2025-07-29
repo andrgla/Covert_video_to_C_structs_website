@@ -109,12 +109,12 @@ Run: `./test_animation <struct_name> <num_frames>`
             <td rowspan="2" style="vertical-align: top;">✨ <strong>Boosts the contrast</strong> of the image, which helps make details clearer, especially for camera footage.</td>
             <td><code>k</code></td>
             <td>Controls the steepness of the contrast curve. Higher values create stronger contrast.</td>
-            <td align="center"><code>0.025</code></td>
+            <td align="center"><code>0.042</code></td>
         </tr>
         <tr>
             <td><code>center</code></td>
             <td>The midpoint of the brightness range where the contrast adjustment is centered.</td>
-            <td align="center"><code>150.0</code></td>
+            <td align="center"><code>175.0</code></td>
         </tr>
     </tbody>
 </table>
