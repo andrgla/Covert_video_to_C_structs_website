@@ -36,6 +36,7 @@ Upload a video in the `input_video` folder and run the following command:
 ```bash
 python3 pixelate_and_convert.py input_videos/<input_video_filename> --fps 30 --struct-name <struct_name>
 ```
+Shortly after will a `.C` file with the chosen struct name appear in the `frames_as_c_code/` folder. 
 >[!Note]
 >Video processing can take a few moments to start. Please be patient after running the command!
 
