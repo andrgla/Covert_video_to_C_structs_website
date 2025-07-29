@@ -15,13 +15,21 @@ This tool helps you convert videos or images into C structs suitable for use in 
 
 ---
 ## 🚀 Getting Started
-
+### Requirements
 Make sure you have Python 3 installed. Then, install the necessary packages for converting a `.mov` file to a `.mp4` file using pip, it might also need you to install FFmpeg using homebrew:
 
 ```bash
 pip install opencv-python Pillow
 ```
-
+### File Structure
+| Folder / File | Description |
+| --- | --- |
+| `input_videos/` | Place your source video files here. |
+| `input_images/` | Place your source image folder or single image here. |
+| `output_images/` | **Output:** Preview images of the processed, pixelated frames appear here. |
+| `frames_as_c_code/` | **Output:** The generated `.c` files containing the animation structs. |
+| `pixelate_and_convert.py` | The main Python script you will run. |
+| `test_c_struct.c` | An optional C file to test and print your generated animation struct. |
 
 ## ⚙️ Usage
 
