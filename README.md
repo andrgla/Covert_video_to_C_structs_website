@@ -36,8 +36,9 @@ Upload a video in the `input_video` folder and run the following command:
 ```bash
 python3 pixelate_and_convert.py input_videos/<input_video_filename> --fps 30 --struct-name <struct_name>
 ```
+>[!Note]
+>Video processing can take a few moments to start. Please be patient after running the command!
 
-Be mindful that it might take 10 seconds until it displays in the terminal that it is working, so be patient.
 
 ### 1. Converting Images
 To convert multiple images to an array of frames in one struct, thus making an animaton, it is important to **put all input images in one folder and name them in an alphabetich/numeric order.** 
