@@ -94,7 +94,7 @@ Run: `./test_animation <struct_name> <num_frames>`
         </tr>
         <tr>
             <td><code>cell_width</code></td>
-            <td>Defines the width (in pixels) of each "cell" in the final upscaled preview image to change the porportions of the cells, thus enabling us to eg. make an almost quadratic 11x18 grid by making the proportions 2:1. The pixel height is set to a 100. </td>
+            <td>Sets the pixel width in the preview image to adjust the aspect ratio. Cell height is fixed at 100px, so a 2:1 ratio makes an 11x18 grid look more square. </td>
             <td align="center"><code>50</code></td>
         </tr>
         <tr>
