@@ -81,8 +81,8 @@ Run: `./test_animation <struct_name> <num_frames>`
             <td align="center"><code>30</code></td>
         </tr>
         <tr>
-            <td rowspan="2" style="vertical-align: top;"><h4>process_image()</h4></td>
-            <td rowspan="2" style="vertical-align: top;">🖼️ <strong>Resizes and pixelates</strong> each frame to fit the target grid dimensions.</td>
+            <td rowspan="3" style="vertical-align: top;"><h4>process_image()</h4></td>
+            <td rowspan="3" style="vertical-align: top;">🖼️ <strong>Resizes and pixelates</strong> each frame to fit the target grid dimensions.</td>
             <td><code>grid_width</code></td>
             <td>Sets the horizontal resolution (number of pixels wide) of the output.</td>
             <td align="center"><code>18</code></td>
@@ -91,6 +91,11 @@ Run: `./test_animation <struct_name> <num_frames>`
             <td><code>grid_height</code></td>
             <td>Sets the vertical resolution (number of pixels high) of the output.</td>
             <td align="center"><code>11</code></td>
+        </tr>
+        <tr>
+            <td><code>cell_width</code></td>
+            <td>Defines the width (in pixels) of each "cell" in the final upscaled preview image.</td>
+            <td align="center"><code>50</code></td>
         </tr>
         <tr>
             <td rowspan="2" style="vertical-align: top;"><h4>filter_dark_pixels()</h4></td>
@@ -109,16 +114,15 @@ Run: `./test_animation <struct_name> <num_frames>`
             <td rowspan="2" style="vertical-align: top;">✨ <strong>Boosts the contrast</strong> of the image, which helps make details clearer, especially for camera footage.</td>
             <td><code>k</code></td>
             <td>Controls the steepness of the contrast curve. Higher values create stronger contrast.</td>
-            <td align="center"><code>0.042</code></td>
+            <td align="center"><code>0.025</code></td>
         </tr>
         <tr>
             <td><code>center</code></td>
             <td>The midpoint of the brightness range where the contrast adjustment is centered.</td>
-            <td align="center"><code>175.0</code></td>
+            <td align="center"><code>150.0</code></td>
         </tr>
     </tbody>
 </table>
-
 
 XOX Andrea
 
