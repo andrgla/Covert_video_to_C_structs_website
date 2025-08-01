@@ -276,6 +276,89 @@ def process_frames(input_dir, struct_name):
         print(f"📁 C code saved to: {c_output_path}")
         print(f"🖼️  Preview images saved to: {output_animation_dir}")
 
+# ===============================================
+# WRAPPER FUNCTIONS FOR FLASK APP
+# ===============================================
+def process_image_and_generate_c_code(image_path, struct_name):
+    """Processes a single image and generates C code for it."""
+    # Create a temporary directory to hold the single image
+    temp_dir = f"temp_single_image_{struct_name}"
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    try:
+        # Copy the image to temp directory with a standard name
+        temp_image_path = os.path.join(temp_dir, "frame_00000.png")
+        
+        # Process the image and get the pixelated version
+        small_pixelated = process_image(image_path, temp_image_path, return_pixelated=True)
+        
+        if not small_pixelated:
+            return "Error: Could not process the image."
+        
+        # Create frame data list with single frame
+        frame_data_list = [(small_pixelated, 0)]
+        
+        # Apply contrast enhancement
+        frame_images = [fd[0] for fd in frame_data_list]
+        enhanced_frames = enhance_contrast_if_many_active(frame_images, SIGMOID_K, SIGMOID_CENTER, on=ENHANCE_CONTRAST)
+        enhanced_frame_data_list = [(enhanced_frames[i], fd[1]) for i, fd in enumerate(frame_data_list)]
+        
+        # Generate C code
+        c_output_path = f"frames_as_c_code/{struct_name}.c"
+        generate_c_struct_array(enhanced_frame_data_list, c_output_path, struct_name)
+        
+        # Read and return the generated C code
+        with open(c_output_path, 'r') as f:
+            return f.read()
+            
+    except Exception as e:
+        return f"Error processing image: {str(e)}"
+    finally:
+        # Clean up temp directory
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+def process_directory_and_generate_c_code(directory_path, struct_name):
+    """Processes a directory of images and generates C code."""
+    try:
+        # Use the existing process_frames function logic
+        frame_data_list = []
+        output_animation_dir = os.path.join("output_images", struct_name)
+        os.makedirs(output_animation_dir, exist_ok=True)
+        
+        filenames = sorted([f for f in os.listdir(directory_path) if f.lower().endswith((".png", ".jpg", ".jpeg"))], key=extract_number)
+        
+        if not filenames:
+            return "Error: No image files found in directory."
+        
+        # Process all images
+        for i, filename in enumerate(filenames):
+            input_file = os.path.join(directory_path, filename)
+            output_file = os.path.join(output_animation_dir, filename)
+            
+            small_pixelated = process_image(input_file, output_file, return_pixelated=True)
+            if small_pixelated:
+                frame_data_list.append((small_pixelated, i))
+        
+        if not frame_data_list:
+            return "Error: Could not process any images."
+        
+        # Apply contrast enhancement
+        frame_images = [fd[0] for fd in frame_data_list]
+        enhanced_frames = enhance_contrast_if_many_active(frame_images, SIGMOID_K, SIGMOID_CENTER, on=ENHANCE_CONTRAST)
+        enhanced_frame_data_list = [(enhanced_frames[i], fd[1]) for i, fd in enumerate(frame_data_list)]
+        
+        # Generate C code
+        c_output_path = f"frames_as_c_code/{struct_name}.c"
+        generate_c_struct_array(enhanced_frame_data_list, c_output_path, struct_name)
+        
+        # Read and return the generated C code
+        with open(c_output_path, 'r') as f:
+            return f.read()
+            
+    except Exception as e:
+        return f"Error processing directory: {str(e)}"
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
@@ -344,6 +427,5 @@ if __name__ == "__main__":
             print("Invalid struct name. Aborting.")
             sys.exit(1)
         process_frames(input_path, struct_name)
-
     else:
         print(f"Error: Input '{input_path}' is not a valid video file or directory.")
