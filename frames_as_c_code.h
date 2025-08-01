@@ -26,23 +26,7 @@ typedef struct {
 // ============================================================================
 
 // Declaration for the animation data, allowing it to be accessed from other files.
-extern const animation_frame swirling_circle_animation[26];
-extern const animation_frame all_icons[4];
 
 #endif // FRAMES_AS_C_CODE_H
 
-extern const animation_frame wakeywakey[22];
-extern const animation_frame bolle[61];
-extern const animation_frame bolle_animation[67];
-extern const animation_frame bolle_constrast_animation[61];
-extern const animation_frame bolle_animation_new[67];
-extern const animation_frame bolle_new[67];
-extern const animation_frame bolle_newest[67];
-extern const animation_frame bolle_animatoin_weaker_contrast[67];
-extern const animation_frame bolle_sitting_still_animation[45];
-extern const animation_frame try_again_bolle[45];
-extern const animation_frame bolle_high_fps[131];
-extern const animation_frame bolle_high_fps[183];
-extern const animation_frame dance_animation_30fps[240];
-extern const animation_frame bolle_newest[408];
 extern const animation_frame scary_man[240];

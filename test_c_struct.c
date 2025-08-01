@@ -62,10 +62,7 @@ void print_animation_frames(const animation_frame* frames, int num_frames, const
 // Extern declarations for all animations
 // This replaces the manual registry
 // ============================================================================
-extern const animation_frame swirling_circle_animation[];
-extern const animation_frame all_icons[];
-extern const animation_frame wakeywakey[];
-extern const animation_frame another_test[];
+extern const animation_frame scary_man[];
 
 
 // ============================================================================
@@ -87,7 +84,7 @@ int main(int argc, char *argv[]) {
         selected_frames = swirling_circle_animation;
     } else if (strcmp(struct_name, "all_icons") == 0) {
         selected_frames = all_icons;
-    } else if (strcmp(struct_name, "wakeywakey") == 0) {
+    } else if (strcmp(struct_name, "scary_man") == 0) {
         selected_frames = wakeywakey;
     } else if (strcmp(struct_name, "another_test") == 0) {
         selected_frames = another_test;
