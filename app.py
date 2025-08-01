@@ -48,11 +48,23 @@ def upload_file():
         c_code_output = ""
         error_message = ""
 
+        # Extract settings from form
+        settings = {
+            'grid_width': int(request.form.get('grid_width', 18)),
+            'grid_height': int(request.form.get('grid_height', 11)),
+            'enhance_contrast': request.form.get('enhance_contrast') == 'on',
+            'sigmoid_k': float(request.form.get('sigmoid_k', 0.042)),
+            'sigmoid_center': float(request.form.get('sigmoid_center', 175.0)),
+            'filter_threshold': int(request.form.get('filter_threshold', 10)),
+            'dimming_threshold': int(request.form.get('dimming_threshold', 30)),
+            'fps': int(request.form.get('fps', 30))
+        }
+
         try:
             # --- Logic to handle different file types ---
             if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
                 # Process a single image
-                c_code_output = process_image_and_generate_c_code(saved_path, struct_name)
+                c_code_output = process_image_and_generate_c_code(saved_path, struct_name, settings)
             
             elif filename.lower().endswith(('.mp4', '.mov')):
                 # Process a video file
@@ -60,7 +72,7 @@ def upload_file():
                 os.makedirs(temp_frames_dir, exist_ok=True)
                 
                 print(f"Slicing video: {saved_path} into {temp_frames_dir}")
-                slice_video_to_frames(saved_path, temp_frames_dir)
+                slice_video_to_frames(saved_path, temp_frames_dir, settings['fps'])
                 
                 # Check if frames were actually extracted
                 extracted_frames = os.listdir(temp_frames_dir)
@@ -69,7 +81,7 @@ def upload_file():
                 if not extracted_frames:
                     error_message = "Could not extract any frames from the video. Please check if the video file is valid or if FFmpeg is correctly installed."
                 else:
-                    c_code_output = process_directory_and_generate_c_code(temp_frames_dir, struct_name)
+                    c_code_output = process_directory_and_generate_c_code(temp_frames_dir, struct_name, settings)
 
             elif filename.lower().endswith('.zip'):
                 # Process a zip file of images
@@ -85,7 +97,7 @@ def upload_file():
                 if len(os.listdir(temp_zip_dir)) == 1 and os.path.isdir(os.path.join(temp_zip_dir, os.listdir(temp_zip_dir)[0])):
                     image_folder = os.path.join(temp_zip_dir, os.listdir(temp_zip_dir)[0])
 
-                c_code_output = process_directory_and_generate_c_code(image_folder, struct_name)
+                c_code_output = process_directory_and_generate_c_code(image_folder, struct_name, settings)
             
             else:
                 error_message = "Unsupported file type. Please upload a video, image, or zip file."
