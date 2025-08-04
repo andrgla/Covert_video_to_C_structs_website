@@ -55,6 +55,9 @@
                 <div class="text-center mb-8">
                     <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Animation to C-Code Converter</h1>
                     <p class="text-gray-600 mt-2">Upload a video, image, or a zip file of images to generate C-struct animations.</p>
+                    <a href="/videos" class="inline-block mt-3 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+                        🎬 View Generated Videos
+                    </a>
                 </div>
 
                 <!-- Upload Form -->
@@ -156,6 +159,17 @@
                                             <label for="fps" class="block text-xs text-gray-600">Frames per Second</label>
                                             <input type="number" name="fps" id="fps" value="30" min="1" max="60" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">
                                         </div>
+                                        <div>
+                                            <label for="video_fps" class="block text-xs text-gray-600">Output Video FPS</label>
+                                            <input type="number" name="video_fps" id="video_fps" value="10" min="1" max="30" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">
+                                            <small class="text-xs text-gray-500">FPS for generated preview video</small>
+                                        </div>
+                                        <div>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="generate_video" id="generate_video" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                                <span class="ml-2 text-xs text-gray-600">Generate preview video (for multiple frames)</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -250,6 +264,8 @@
             document.getElementById('filter_threshold').value = '5';
             document.getElementById('dimming_threshold').value = '15';
             document.getElementById('fps').value = '30';
+            document.getElementById('video_fps').value = '10';
+            document.getElementById('generate_video').checked = true;
             document.getElementById('cell_aspect_ratio').value = '1.6';
         }
     </script>

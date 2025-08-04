@@ -55,9 +55,11 @@ def upload_file():
             'enhance_contrast': request.form.get('enhance_contrast') == 'on',
             'sigmoid_k': float(request.form.get('sigmoid_k', 0.042)),
             'sigmoid_center': float(request.form.get('sigmoid_center', 175.0)),
-            'filter_threshold': int(request.form.get('filter_threshold', 10)),
-            'dimming_threshold': int(request.form.get('dimming_threshold', 30)),
+            'filter_threshold': int(request.form.get('filter_threshold', 5)),
+            'dimming_threshold': int(request.form.get('dimming_threshold', 15)),
             'fps': int(request.form.get('fps', 30)),
+            'video_fps': int(request.form.get('video_fps', 10)),
+            'generate_video': request.form.get('generate_video') == 'on',
             'cell_aspect_ratio': float(request.form.get('cell_aspect_ratio', 1.6))
         }
         
@@ -129,6 +131,92 @@ def favicon():
     """
     return send_from_directory(os.path.join(app.root_path, 'static'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+# --- Video Serving Routes ---
+@app.route('/videos')
+def list_videos():
+    """
+    Lists all generated animation videos.
+    """
+    videos = []
+    output_base = "output_images"
+    
+    if os.path.exists(output_base):
+        for folder in os.listdir(output_base):
+            folder_path = os.path.join(output_base, folder)
+            if os.path.isdir(folder_path):
+                for file in os.listdir(folder_path):
+                    if file.endswith('.mp4') and not file.endswith('_old.mp4'):
+                        videos.append({
+                            'name': file,
+                            'folder': folder,
+                            'path': f"/video/{folder}/{file}",
+                            'size': os.path.getsize(os.path.join(folder_path, file))
+                        })
+    
+    return render_template('videos.html', videos=videos)
+
+@app.route('/video/<folder>/<filename>')
+def serve_video(folder, filename):
+    """
+    Serves a generated video file with proper headers for browser playback.
+    """
+    video_path = os.path.join("output_images", folder)
+    full_video_path = os.path.join(video_path, filename)
+    
+    if not os.path.exists(full_video_path):
+        return "Video not found", 404
+    
+    # Get file size for proper range requests
+    file_size = os.path.getsize(full_video_path)
+    
+    # Handle range requests (important for video streaming)
+    range_header = request.headers.get('Range', None)
+    if range_header:
+        byte_start, byte_end = parse_range_header(range_header, file_size)
+        
+        def generate():
+            with open(full_video_path, 'rb') as f:
+                f.seek(byte_start)
+                remaining = byte_end - byte_start + 1
+                while remaining:
+                    chunk_size = min(8192, remaining)  # 8KB chunks
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+        
+        response = app.response_class(
+            generate(),
+            206,  # Partial Content
+            headers={
+                'Content-Range': f'bytes {byte_start}-{byte_end}/{file_size}',
+                'Accept-Ranges': 'bytes',
+                'Content-Length': str(byte_end - byte_start + 1),
+                'Content-Type': 'video/mp4',
+                'Cache-Control': 'no-cache',
+            }
+        )
+        return response
+    else:
+        # Full file request
+        response = send_from_directory(
+            video_path, 
+            filename, 
+            mimetype='video/mp4',
+            as_attachment=False
+        )
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
+
+def parse_range_header(range_header, file_size):
+    """Parse the Range header and return start and end bytes."""
+    range_match = range_header.replace('bytes=', '').split('-')
+    byte_start = int(range_match[0]) if range_match[0] else 0
+    byte_end = int(range_match[1]) if range_match[1] else file_size - 1
+    return byte_start, byte_end
 
 # --- Main execution ---
 if __name__ == '__main__':

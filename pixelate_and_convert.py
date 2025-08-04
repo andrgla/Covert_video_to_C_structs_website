@@ -32,6 +32,32 @@ FILTER_THRESHOLD = 5  # Less aggressive - was 10
 DIMMING_THRESHOLD = 15  # Less aggressive - was 30
 
 # =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+def validate_brightness(value):
+    """Ensure brightness values are within valid 0-255 range."""
+    return max(0, min(255, int(value)))
+
+def get_processing_settings(custom_settings=None):
+    """Get a complete settings dictionary with defaults."""
+    default_settings = {
+        'grid_width': GRID_WIDTH,
+        'grid_height': GRID_HEIGHT,
+        'enhance_contrast': ENHANCE_CONTRAST,
+        'sigmoid_k': SIGMOID_K,
+        'sigmoid_center': SIGMOID_CENTER,
+        'filter_threshold': FILTER_THRESHOLD,
+        'dimming_threshold': DIMMING_THRESHOLD,
+        'cell_aspect_ratio': CELL_ASPECT_RATIO
+    }
+    
+    if custom_settings:
+        default_settings.update(custom_settings)
+    
+    return default_settings
+
+# =============================================================================
 # FFMPEG AND VIDEO CONVERSION
 # =============================================================================
 def check_ffmpeg():
@@ -111,177 +137,99 @@ def slice_video_to_frames(video_path, output_folder, frames_per_second=30):
 # ===============================================
 # IMAGE PROCESSING FUNCTIONS
 # ===============================================
-def filter_dark_pixels(small_pixelated, threshold=10, dimming_threshold=30, grid_width=18, grid_height=11):
-    filtered_image = small_pixelated.copy()
+
+def apply_filtering(image, settings):
+    """Apply dark pixel filtering to an image."""
+    filtered_image = image.copy()
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    threshold = settings['filter_threshold']
+    dimming_threshold = settings['dimming_threshold']
+    
+    pixels_changed = 0
     for y in range(grid_height):
         for x in range(grid_width):
             brightness = filtered_image.getpixel((x, y))
             if not isinstance(brightness, int) or brightness == 0:
                 continue
+                
+            original_brightness = brightness
+            
             if brightness <= threshold:
                 # Set very dark pixels to black
-                filtered_image.putpixel((x, y), 0)
+                new_brightness = 0
             elif threshold < brightness <= dimming_threshold:
                 # Gentle linear dimming instead of aggressive quadratic
                 # Reduce brightness by 30% in the dimming range
-                new_brightness = int(brightness * 0.7)
-                filtered_image.putpixel((x, y), max(0, new_brightness))
-    return filtered_image
+                new_brightness = validate_brightness(brightness * 0.7)
+            else:
+                new_brightness = brightness
+            
+            if new_brightness != original_brightness:
+                pixels_changed += 1
+                filtered_image.putpixel((x, y), new_brightness)
+    
+    return filtered_image, pixels_changed
 
-def enhance_contrast_if_many_active(frames, k=0.042, center=175.0, on=True, grid_width=18, grid_height=11):
-    if not on:
-        return frames
+def apply_contrast_enhancement(image, settings):
+    """Apply sigmoid contrast enhancement to an image."""
+    if not settings['enhance_contrast']:
+        return image, 0
     
-    enhanced_frames = []
-    for img in frames:
-        enhanced_img = img.copy()
-        for y in range(grid_height):
-            for x in range(grid_width):
-                val = enhanced_img.getpixel((x, y))
-                x_f = float(val)
-                sigmoid = 1.0 / (1.0 + math.exp(-k * (x_f - center)))
-                new_val = int(sigmoid * 255.0)
-                enhanced_img.putpixel((x, y), new_val)
-        enhanced_frames.append(enhanced_img)
-    return enhanced_frames
-
-def process_image(input_path, output_path, return_pixelated=False, settings=None):
-    # Use default settings if none provided
-    if settings is None:
-        settings = {
-            'grid_width': GRID_WIDTH,
-            'grid_height': GRID_HEIGHT,
-            'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD,
-            'cell_aspect_ratio': CELL_ASPECT_RATIO
-        }
+    enhanced_image = image.copy()
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    k = settings['sigmoid_k']
+    center = settings['sigmoid_center']
     
-    grid_width = settings.get('grid_width', GRID_WIDTH)
-    grid_height = settings.get('grid_height', GRID_HEIGHT)
-    filter_threshold = settings.get('filter_threshold', FILTER_THRESHOLD)
-    dimming_threshold = settings.get('dimming_threshold', DIMMING_THRESHOLD)
-    cell_aspect_ratio = settings.get('cell_aspect_ratio', CELL_ASPECT_RATIO)
-    
-    try:
-        original_img = Image.open(input_path)
-    except FileNotFoundError:
-        print(f"Error: The file '{input_path}' was not found.")
-        return
-    except Exception as e:
-        print(f"Error opening or processing image: {e}")
-        return
-
-    cell_height = int(CELL_WIDTH * cell_aspect_ratio)
-    canvas_width = grid_width * CELL_WIDTH
-    canvas_height = grid_height * cell_height
-
-    background = Image.new('L', (canvas_width, canvas_height), 0)
-    original_img = original_img.convert('L')
-    
-    original_width, original_height = original_img.size
-    scale_factor = max(canvas_width / original_width, canvas_height / original_height)
-    new_width = int(original_width * scale_factor)
-    new_height = int(original_height * scale_factor)
-    resized_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-    paste_x = (canvas_width - new_width) // 2
-    paste_y = (canvas_height - new_height) // 2
-    background.paste(resized_img, (paste_x, paste_y))
-
-    small_pixelated = background.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
-    
-    # Save the raw pixelated image (before filtering) for comparison
-    raw_preview_scale = 10
-    # Maintain the correct cell aspect ratio (width:height = configurable)
-    preview_cell_width = raw_preview_scale
-    preview_cell_height = int(raw_preview_scale * cell_aspect_ratio)
-    raw_preview = small_pixelated.resize(
-        (grid_width * preview_cell_width, grid_height * preview_cell_height), 
-        Image.Resampling.NEAREST
-    )
-    base_name = os.path.splitext(output_path)[0]
-    raw_preview_path = f"{base_name}_raw.png"
-    raw_preview.save(raw_preview_path)
-    print(f"Raw pixelated preview saved: {raw_preview_path}")
-    print(f"   📐 Preview dimensions: {grid_width * preview_cell_width}x{grid_height * preview_cell_height}")
-    print(f"   📊 Cell aspect ratio: {preview_cell_width}:{preview_cell_height} (1:{cell_aspect_ratio})")
-    
-    # Apply filtering with debug output
-    print(f"Applying filtering - Threshold: {filter_threshold}, Dimming: {dimming_threshold}")
-    
-    # Debug: Show pixel stats before filtering
-    raw_pixels = [small_pixelated.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
-    print(f"   📊 Before filtering - Min: {min(raw_pixels)}, Max: {max(raw_pixels)}, Avg: {sum(raw_pixels)/len(raw_pixels):.1f}")
-    
-    small_pixelated_filtered = filter_dark_pixels(small_pixelated, filter_threshold, dimming_threshold, grid_width, grid_height)
-    
-    # Debug: Show pixel stats after filtering
-    filtered_pixels = [small_pixelated_filtered.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
-    print(f"   📊 After filtering - Min: {min(filtered_pixels)}, Max: {max(filtered_pixels)}, Avg: {sum(filtered_pixels)/len(filtered_pixels):.1f}")
-    
-    # Count pixels affected by filtering for debug
-    pixels_changed = 0
+    pixels_enhanced = 0
     for y in range(grid_height):
         for x in range(grid_width):
-            original = small_pixelated.getpixel((x, y))
-            filtered = small_pixelated_filtered.getpixel((x, y))
-            if original != filtered:
-                pixels_changed += 1
-    print(f"Filtering changed {pixels_changed} out of {grid_width * grid_height} pixels")
+            val = enhanced_image.getpixel((x, y))
+            x_f = float(val)
+            sigmoid = 1.0 / (1.0 + math.exp(-k * (x_f - center)))
+            new_val = validate_brightness(sigmoid * 255.0)
+            
+            if new_val != val:
+                pixels_enhanced += 1
+                enhanced_image.putpixel((x, y), new_val)
     
-    # Apply contrast enhancement if enabled (after filtering but before final output)
-    enhance_contrast = settings.get('enhance_contrast', ENHANCE_CONTRAST)
-    if enhance_contrast:
-        sigmoid_k = settings.get('sigmoid_k', SIGMOID_K)
-        sigmoid_center = settings.get('sigmoid_center', SIGMOID_CENTER)
-        print(f"Applying contrast enhancement - K: {sigmoid_k}, Center: {sigmoid_center}")
-        
-        # Apply sigmoid contrast enhancement
-        enhanced_frame = small_pixelated_filtered.copy()
-        pixels_enhanced = 0
-        for y in range(grid_height):
-            for x in range(grid_width):
-                val = enhanced_frame.getpixel((x, y))
-                x_f = float(val)
-                sigmoid = 1.0 / (1.0 + math.exp(-sigmoid_k * (x_f - sigmoid_center)))
-                new_val = int(sigmoid * 255.0)
-                if new_val != val:
-                    pixels_enhanced += 1
-                enhanced_frame.putpixel((x, y), new_val)
-        
-        # Debug: Show pixel stats after contrast enhancement
-        enhanced_pixels = [enhanced_frame.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
-        print(f"   📊 After contrast - Min: {min(enhanced_pixels)}, Max: {max(enhanced_pixels)}, Avg: {sum(enhanced_pixels)/len(enhanced_pixels):.1f}")
-        print(f"Contrast enhancement changed {pixels_enhanced} out of {grid_width * grid_height} pixels")
-        small_pixelated_final = enhanced_frame
-    else:
-        print("Contrast enhancement disabled")
-        small_pixelated_final = small_pixelated_filtered
-    
-    # Debug: Show pixel stats for final result
-    final_pixels = [small_pixelated_final.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
-    print(f"   📊 FINAL RESULT - Min: {min(final_pixels)}, Max: {max(final_pixels)}, Avg: {sum(final_pixels)/len(final_pixels):.1f}")
-    
-    final_image = small_pixelated_final.resize((canvas_width, canvas_height), Image.Resampling.NEAREST)
+    return enhanced_image, pixels_enhanced
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    final_image.save(output_path)
+def get_pixel_stats(image, settings):
+    """Get statistics about pixel values in an image."""
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
     
-    # Save a preview image that shows the final processed result with correct aspect ratio
-    preview_scale = 10
-    preview_cell_width = preview_scale
-    preview_cell_height = int(preview_scale * cell_aspect_ratio)
-    preview_image = small_pixelated_final.resize(
+    pixels = []
+    for y in range(grid_height):
+        for x in range(grid_width):
+            pixels.append(image.getpixel((x, y)))
+    
+    if not pixels:
+        return {'min': 0, 'max': 0, 'avg': 0, 'count': 0}
+    
+    return {
+        'min': min(pixels),
+        'max': max(pixels),
+        'avg': sum(pixels) / len(pixels),
+        'count': len(pixels)
+    }
+
+def save_preview_image(image, path, settings, scale=10):
+    """Save a preview image with correct aspect ratio."""
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    cell_aspect_ratio = settings['cell_aspect_ratio']
+    
+    preview_cell_width = scale
+    preview_cell_height = int(scale * cell_aspect_ratio)
+    preview_image = image.resize(
         (grid_width * preview_cell_width, grid_height * preview_cell_height), 
         Image.Resampling.NEAREST
     )
-    
-    preview_path = f"{base_name}_final.png"
-    preview_image.save(preview_path)
-    print(f"Final processed preview saved: {preview_path}")
-
-    if return_pixelated:
-        return small_pixelated_final
+    preview_image.save(path)
+    return preview_image.size
 
 def save_enhanced_preview(enhanced_frame, output_dir, filename, settings=None):
     """Save a preview image that shows the final processed result with contrast enhancement."""
@@ -317,21 +265,255 @@ def save_enhanced_preview(enhanced_frame, output_dir, filename, settings=None):
     preview_image.save(preview_path)
     print(f"✨ Final enhanced preview saved: {preview_path}")
 
+def generate_video(output_dir, struct_name, fps=10, settings=None):
+    """Generate a video from the processed preview images."""
+    try:
+        # Get all main processed images (not the extra preview versions)
+        preview_files = []
+        for filename in os.listdir(output_dir):
+            if filename.endswith('.png') and not filename.endswith('_raw.png') and not filename.endswith('_final.png'):
+                preview_files.append(filename)
+        
+        if not preview_files:
+            print("⚠️  No processed images found for video generation")
+            print(f"   🔍 Searched for *.png files in {output_dir}")
+            # Debug: show what files are actually there
+            all_files = [f for f in os.listdir(output_dir) if f.endswith('.png')]
+            print(f"   📁 Found {len(all_files)} PNG files: {all_files[:5]}..." if len(all_files) > 5 else f"   📁 Found files: {all_files}")
+            return None
+        
+        # Sort files by frame number
+        preview_files.sort(key=extract_number)
+        
+        if len(preview_files) < 2:
+            print("⚠️  Need at least 2 frames to generate a video")
+            return None
+        
+        # Get video dimensions from first image
+        first_image_path = os.path.join(output_dir, preview_files[0])
+        first_image = cv2.imread(first_image_path)
+        if first_image is None:
+            print(f"❌ Could not read first image: {first_image_path}")
+            return None
+        
+        height, width, layers = first_image.shape
+        
+        # Create video writer - use mp4v for OpenCV compatibility, convert later if needed
+        video_path = os.path.join(output_dir, f"{struct_name}_animation.mp4")
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_writer = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
+        
+        if not video_writer.isOpened():
+            print("❌ Could not create video writer")
+            return None
+        
+        print(f"🎬 Generating video with {len(preview_files)} frames at {fps} FPS...")
+        
+        # Add each frame to video
+        for i, filename in enumerate(preview_files):
+            image_path = os.path.join(output_dir, filename)
+            frame = cv2.imread(image_path)
+            
+            if frame is not None:
+                video_writer.write(frame)
+                if (i + 1) % 10 == 0:  # Progress update every 10 frames
+                    print(f"   📹 Added frame {i + 1}/{len(preview_files)}")
+            else:
+                print(f"⚠️  Could not read frame: {image_path}")
+        
+        # Release video writer
+        video_writer.release()
+        
+        # Verify video was created
+        if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+            print(f"✅ Video successfully generated: {video_path}")
+            
+            # Convert to web-compatible H.264 format if ffmpeg is available
+            if shutil.which("ffmpeg"):
+                temp_path = video_path + "_temp.mp4"
+                web_path = video_path
+                
+                try:
+                    # Move original to temp
+                    os.rename(video_path, temp_path)
+                    
+                    # Convert to H.264
+                    print("🔄 Converting to web-compatible H.264 format...")
+                    subprocess.run([
+                        "ffmpeg", "-i", temp_path, "-c:v", "libx264", 
+                        "-preset", "fast", "-crf", "23", "-pix_fmt", "yuv420p", 
+                        web_path, "-y"
+                    ], check=True, capture_output=True, text=True)
+                    
+                    # Remove temp file
+                    os.remove(temp_path)
+                    print("✅ Video converted to web-compatible format")
+                    
+                except subprocess.CalledProcessError as e:
+                    print(f"⚠️  H.264 conversion failed: {e.stderr}")
+                    # Restore original if conversion failed
+                    if os.path.exists(temp_path):
+                        os.rename(temp_path, video_path)
+                except Exception as e:
+                    print(f"⚠️  Conversion error: {str(e)}")
+                    # Restore original if conversion failed
+                    if os.path.exists(temp_path):
+                        os.rename(temp_path, video_path)
+            else:
+                print("ℹ️  ffmpeg not available - video in basic MP4 format")
+            
+            return video_path
+        else:
+            print("❌ Video generation failed")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error generating video: {str(e)}")
+        return None
+
+def process_single_image_to_grid(input_path, settings):
+    """
+    Process a single image into a pixelated grid.
+    Returns the final processed image that matches what will be in the C struct.
+    """
+    try:
+        original_img = Image.open(input_path)
+    except FileNotFoundError:
+        print(f"Error: The file '{input_path}' was not found.")
+        return None
+    except Exception as e:
+        print(f"Error opening or processing image: {e}")
+        return None
+
+    # Extract settings
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    cell_aspect_ratio = settings['cell_aspect_ratio']
+    
+    # Calculate canvas dimensions
+    cell_height = int(CELL_WIDTH * cell_aspect_ratio)
+    canvas_width = grid_width * CELL_WIDTH
+    canvas_height = grid_height * cell_height
+
+    # Create background and resize original image to fit
+    background = Image.new('L', (canvas_width, canvas_height), 0)
+    original_img = original_img.convert('L')
+    
+    original_width, original_height = original_img.size
+    scale_factor = max(canvas_width / original_width, canvas_height / original_height)
+    new_width = int(original_width * scale_factor)
+    new_height = int(original_height * scale_factor)
+    resized_img = original_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    paste_x = (canvas_width - new_width) // 2
+    paste_y = (canvas_height - new_height) // 2
+    background.paste(resized_img, (paste_x, paste_y))
+
+    # Create the initial pixelated version
+    raw_pixelated = background.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
+    
+    print(f"📊 Raw pixelated stats: {get_pixel_stats(raw_pixelated, settings)}")
+    
+    # Apply filtering
+    filtered_image, pixels_filtered = apply_filtering(raw_pixelated, settings)
+    print(f"📊 After filtering: {get_pixel_stats(filtered_image, settings)} ({pixels_filtered} pixels changed)")
+    
+    # Apply contrast enhancement
+    final_image, pixels_enhanced = apply_contrast_enhancement(filtered_image, settings)
+    print(f"📊 Final result: {get_pixel_stats(final_image, settings)} ({pixels_enhanced} pixels enhanced)")
+    
+    # Validate all pixel values are in valid range
+    stats = get_pixel_stats(final_image, settings)
+    if stats['min'] < 0 or stats['max'] > 255:
+        print(f"⚠️  WARNING: Pixel values out of range! Min: {stats['min']}, Max: {stats['max']}")
+    
+    return {
+        'raw': raw_pixelated,
+        'filtered': filtered_image, 
+        'final': final_image,
+        'stats': {
+            'pixels_filtered': pixels_filtered,
+            'pixels_enhanced': pixels_enhanced
+        }
+    }
+
+def process_image(input_path, output_path, return_pixelated=False, settings=None):
+    """Main image processing function - now uses the refactored pipeline."""
+    settings = get_processing_settings(settings)
+    
+    result = process_single_image_to_grid(input_path, settings)
+    if not result:
+        return None
+    
+    raw_pixelated = result['raw']
+    final_image = result['final']
+    
+    # Save preview images
+    base_name = os.path.splitext(output_path)[0]
+    
+    # Remove extra preview files - user doesn't want _raw.png and _final.png versions
+    # Just save the main processed image
+    
+    # Save the full-scale final image
+    cell_height = int(CELL_WIDTH * settings['cell_aspect_ratio'])
+    canvas_width = settings['grid_width'] * CELL_WIDTH
+    canvas_height = settings['grid_height'] * cell_height
+    full_scale_final = final_image.resize((canvas_width, canvas_height), Image.Resampling.NEAREST)
+    
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    full_scale_final.save(output_path)
+
+    return final_image if return_pixelated else None
+
 # ===============================================
 # C CODE GENERATION
 # ===============================================
-def generate_c_struct_array(frame_data_list, c_output_path, struct_variable_name, settings=None):
-    # Use default settings if none provided
-    if settings is None:
-        settings = {'grid_width': GRID_WIDTH, 'grid_height': GRID_HEIGHT}
+def validate_c_struct_data(frame_data_list, settings):
+    """Validate that all pixel data is suitable for C struct generation."""
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    total_pixels = grid_width * grid_height
     
-    grid_width = settings.get('grid_width', GRID_WIDTH)
-    grid_height = settings.get('grid_height', GRID_HEIGHT)
+    print(f"🔍 Validating C struct data for {len(frame_data_list)} frames...")
+    
+    for frame_idx, (enhanced_frame, frame_number) in enumerate(frame_data_list):
+        pixels_out_of_range = 0
+        active_pixels = 0
+        
+        for y in range(grid_height):
+            for x in range(grid_width):
+                brightness = enhanced_frame.getpixel((x, y))
+                
+                if not isinstance(brightness, int):
+                    print(f"⚠️  Frame {frame_idx}: Non-integer brightness at ({x},{y}): {brightness}")
+                
+                if brightness < 0 or brightness > 255:
+                    pixels_out_of_range += 1
+                    print(f"⚠️  Frame {frame_idx}: Brightness out of range at ({x},{y}): {brightness}")
+                
+                if brightness > 0:
+                    active_pixels += 1
+        
+        if pixels_out_of_range > 0:
+            print(f"❌ Frame {frame_idx}: {pixels_out_of_range} pixels out of valid range!")
+        
+        print(f"✅ Frame {frame_idx}: {active_pixels}/{total_pixels} active pixels, all in valid range")
+
+def generate_c_struct_array(frame_data_list, c_output_path, struct_variable_name, settings):
+    """Generate C struct array with validation."""
+    settings = get_processing_settings(settings)
+    
+    # Validate data before generating C code
+    validate_c_struct_data(frame_data_list, settings)
+    
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
     
     c_code = [
         '// Generated by the pixelator script.\n',
+        f'// This C struct contains the processed pixel data from the main .png images.\n',
         '#include "frames_as_c_code.h"\n\n',
-        f'animation_frame const {struct_variable_name}[{len(frame_data_list)}] = {{\n'
+        f'const animation_frame {struct_variable_name}[{len(frame_data_list)}] = {{\n'
     ]
 
     for enhanced_frame, frame_number in frame_data_list:
@@ -339,6 +521,8 @@ def generate_c_struct_array(frame_data_list, c_output_path, struct_variable_name
         for y in range(grid_height):
             for x in range(grid_width):
                 brightness = enhanced_frame.getpixel((x, y))
+                # Ensure brightness is valid and integer
+                brightness = validate_brightness(brightness)
                 if brightness > 0:
                     pixels.append({'x': x, 'y': y, 'brightness': brightness})
 
@@ -358,8 +542,10 @@ def generate_c_struct_array(frame_data_list, c_output_path, struct_variable_name
     os.makedirs(os.path.dirname(c_output_path), exist_ok=True)
     with open(c_output_path, 'w') as f:
         f.write("".join(c_code))
-    print(f"Successfully saved C struct array to '{c_output_path}'")
+    print(f"✅ C struct array saved to '{c_output_path}'")
+    print("🔗 The C struct contains the same data as the main .png images")
 
+    # Update header file
     header_path = os.path.join(os.path.dirname(c_output_path), "..", "frames_as_c_code.h")
     declaration = f"extern const animation_frame {struct_variable_name}[{len(frame_data_list)}];\n"
     try:
@@ -381,20 +567,9 @@ def extract_number(filename):
 # ===============================================
 # MAIN EXECUTION
 # ===============================================
-def process_frames(input_dir, struct_name, settings=None):
+def process_frames(input_dir, struct_name, custom_settings=None):
     """Processes a directory of frames, generates C code, and cleans up."""
-    # Use default settings if none provided
-    if settings is None:
-        settings = {
-            'grid_width': GRID_WIDTH,
-            'grid_height': GRID_HEIGHT,
-            'enhance_contrast': ENHANCE_CONTRAST,
-            'sigmoid_k': SIGMOID_K,
-            'sigmoid_center': SIGMOID_CENTER,
-            'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD,
-            'cell_aspect_ratio': CELL_ASPECT_RATIO
-        }
+    settings = get_processing_settings(custom_settings)
     
     frame_data_list = []
     output_animation_dir = os.path.join("output_images", struct_name)
@@ -405,13 +580,17 @@ def process_frames(input_dir, struct_name, settings=None):
     
     if total_files > 0:
         print(f"🖼️  Processing {total_files} frames from '{os.path.basename(input_dir)}'...")
+        print(f"⚙️  Settings: Grid={settings['grid_width']}x{settings['grid_height']}, "
+              f"Contrast={'ON' if settings['enhance_contrast'] else 'OFF'}, "
+              f"Filter={settings['filter_threshold']}/{settings['dimming_threshold']}")
+        
         for i, filename in enumerate(filenames):
             input_file = os.path.join(input_dir, filename)
             output_file = os.path.join(output_animation_dir, filename)
             
-            small_pixelated = process_image(input_file, output_file, return_pixelated=True, settings=settings)
-            if small_pixelated:
-                frame_data_list.append((small_pixelated, i))
+            final_pixelated = process_image(input_file, output_file, return_pixelated=True, settings=settings)
+            if final_pixelated:
+                frame_data_list.append((final_pixelated, i))
             
             progress = i + 1
             bar_length = 40
@@ -423,17 +602,21 @@ def process_frames(input_dir, struct_name, settings=None):
         print()
 
     if frame_data_list:
-        print("Note: Contrast enhancement is now handled within process_image()")
-        print("No need to apply it again here to avoid double processing")
-        
-        # Save previews for first few frames
-        num_previews = min(5, len(frame_data_list))  # Save up to 5 previews
-        for i in range(num_previews):
-            filename = f"frame_{i:05d}.png"
-            save_enhanced_preview(frame_data_list[i][0], output_animation_dir, filename, settings)
-        
         c_output_path = f"frames_as_c_code/{struct_name}.c"
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
+        
+        # Generate video from preview images
+        video_fps = settings.get('video_fps', 10)  # Use video-specific FPS
+        generate_video_enabled = settings.get('generate_video', True)
+        
+        if generate_video_enabled:
+            video_path = generate_video(output_animation_dir, struct_name, video_fps, settings)
+            if video_path:
+                print(f"🎬 Animation video saved to: {video_path}")
+            else:
+                print("⚠️  Video generation failed or skipped (need multiple frames)")
+        else:
+            print("ℹ️  Video generation disabled in settings")
         
         print(f"\n✅ Successfully created animation '{struct_name}' with {len(frame_data_list)} frames")
         print(f"📁 C code saved to: {c_output_path}")
@@ -442,20 +625,9 @@ def process_frames(input_dir, struct_name, settings=None):
 # ===============================================
 # WRAPPER FUNCTIONS FOR FLASK APP
 # ===============================================
-def process_image_and_generate_c_code(image_path, struct_name, settings=None):
+def process_image_and_generate_c_code(image_path, struct_name, custom_settings=None):
     """Processes a single image and generates C code for it."""
-    # Use default settings if none provided
-    if settings is None:
-        settings = {
-            'grid_width': GRID_WIDTH,
-            'grid_height': GRID_HEIGHT,
-            'enhance_contrast': ENHANCE_CONTRAST,
-            'sigmoid_k': SIGMOID_K,
-            'sigmoid_center': SIGMOID_CENTER,
-            'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD,
-            'cell_aspect_ratio': CELL_ASPECT_RATIO
-        }
+    settings = get_processing_settings(custom_settings)
     
     # Create a temporary directory to hold the single image
     temp_dir = f"temp_single_image_{struct_name}"
@@ -465,26 +637,21 @@ def process_image_and_generate_c_code(image_path, struct_name, settings=None):
         # Copy the image to temp directory with a standard name
         temp_image_path = os.path.join(temp_dir, "frame_00000.png")
         
-        # Process the image and get the pixelated version
-        small_pixelated = process_image(image_path, temp_image_path, return_pixelated=True, settings=settings)
+        # Process the image and get the final pixelated version
+        final_pixelated = process_image(image_path, temp_image_path, return_pixelated=True, settings=settings)
         
-        if not small_pixelated:
+        if not final_pixelated:
             return "Error: Could not process the image."
         
         # Create frame data list with single frame
-        frame_data_list = [(small_pixelated, 0)]
+        frame_data_list = [(final_pixelated, 0)]
         
-        # Note: Contrast enhancement is now handled within process_image()
-        # No need to apply it again here to avoid double processing
-        
-        # Save a preview for single image
-        temp_output_dir = os.path.join("output_images", struct_name)
-        os.makedirs(temp_output_dir, exist_ok=True)
-        save_enhanced_preview(small_pixelated, temp_output_dir, "single_image.png", settings)
-        
-        # Generate C code
+        # Generate C code with validation
         c_output_path = f"frames_as_c_code/{struct_name}.c"
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
+        
+        # Note: Video generation skipped for single images (need multiple frames)
+        print("ℹ️  Video generation skipped - single image processing")
         
         # Read and return the generated C code
         with open(c_output_path, 'r') as f:
@@ -497,23 +664,11 @@ def process_image_and_generate_c_code(image_path, struct_name, settings=None):
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
-def process_directory_and_generate_c_code(directory_path, struct_name, settings=None):
+def process_directory_and_generate_c_code(directory_path, struct_name, custom_settings=None):
     """Processes a directory of images and generates C code."""
-    # Use default settings if none provided
-    if settings is None:
-        settings = {
-            'grid_width': GRID_WIDTH,
-            'grid_height': GRID_HEIGHT,
-            'enhance_contrast': ENHANCE_CONTRAST,
-            'sigmoid_k': SIGMOID_K,
-            'sigmoid_center': SIGMOID_CENTER,
-            'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD,
-            'cell_aspect_ratio': CELL_ASPECT_RATIO
-        }
+    settings = get_processing_settings(custom_settings)
     
     try:
-        # Use the existing process_frames function logic
         frame_data_list = []
         output_animation_dir = os.path.join("output_images", struct_name)
         os.makedirs(output_animation_dir, exist_ok=True)
@@ -528,25 +683,31 @@ def process_directory_and_generate_c_code(directory_path, struct_name, settings=
             input_file = os.path.join(directory_path, filename)
             output_file = os.path.join(output_animation_dir, filename)
             
-            small_pixelated = process_image(input_file, output_file, return_pixelated=True, settings=settings)
-            if small_pixelated:
-                frame_data_list.append((small_pixelated, i))
+            final_pixelated = process_image(input_file, output_file, return_pixelated=True, settings=settings)
+            if final_pixelated:
+                frame_data_list.append((final_pixelated, i))
         
         if not frame_data_list:
             return "Error: Could not process any images."
         
-        # Note: Contrast enhancement is now handled within process_image()
-        # No need to apply it again here to avoid double processing
-        
-        # Save previews for first few frames to show processing effect
-        num_previews = min(5, len(frame_data_list))  # Save up to 5 previews
-        for i in range(num_previews):
-            filename = f"frame_{i:05d}.png"
-            save_enhanced_preview(frame_data_list[i][0], output_animation_dir, filename, settings)
-        
         # Generate C code
         c_output_path = f"frames_as_c_code/{struct_name}.c"
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
+        
+        # Generate video from preview images if we have multiple frames
+        if len(frame_data_list) > 1:
+            generate_video_enabled = settings.get('generate_video', True)
+            if generate_video_enabled:
+                video_fps = settings.get('video_fps', 10)
+                video_path = generate_video(output_animation_dir, struct_name, video_fps, settings)
+                if video_path:
+                    print(f"🎬 Generated animation video: {os.path.basename(video_path)}")
+                else:
+                    print("⚠️  Video generation failed")
+            else:
+                print("ℹ️  Video generation disabled in settings")
+        else:
+            print("ℹ️  Video generation skipped - need multiple frames")
         
         # Read and return the generated C code
         with open(c_output_path, 'r') as f:
@@ -607,7 +768,7 @@ if __name__ == "__main__":
         slice_video_to_frames(input_path, temp_frames_dir, fps)
         
         if os.path.exists(temp_frames_dir) and os.listdir(temp_frames_dir):
-            process_frames(temp_frames_dir, struct_name, None)  # Use default settings
+            process_frames(temp_frames_dir, struct_name)
             shutil.rmtree(temp_frames_dir)
             print(f"🗑️  Cleaned up temporary frames from {temp_frames_dir}")
         else:
@@ -622,6 +783,6 @@ if __name__ == "__main__":
         if not struct_name:
             print("Invalid struct name. Aborting.")
             sys.exit(1)
-        process_frames(input_path, struct_name, None)  # Use default settings
+        process_frames(input_path, struct_name)
     else:
         print(f"Error: Input '{input_path}' is not a valid video file or directory.")

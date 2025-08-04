@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Animation Videos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="px-6 py-8">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">Generated Animation Videos</h1>
+                    <p class="text-gray-600 mt-2">View your processed animation videos</p>
+                    <a href="/" class="inline-block mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                        ← Back to Generator
+                    </a>
+                </div>
+
+                {% if videos %}
+                <div class="grid gap-6">
+                    {% for video in videos %}
+                    <div class="border border-gray-200 rounded-lg p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ video.name }}</h3>
+                                <p class="text-sm text-gray-500">
+                                    From: {{ video.folder }} |
+                                    Size: {{ "%.1f" | format(video.size / 1024) }} KB
+                                </p>
+                            </div>
+                            <a href="{{ video.path }}" download class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">
+                                Download
+                            </a>
+                        </div>
+                        
+                        <video controls preload="metadata" class="w-full max-w-md mx-auto bg-black rounded" style="image-rendering: pixelated;" onloadstart="console.log('Video loading started')" onerror="console.log('Video error:', event)" oncanplay="console.log('Video can play')">
+                            <source src="{{ video.path }}" type="video/mp4">
+                            <p class="text-red-600 text-sm mt-2">Your browser does not support the video tag or there was an error loading the video.</p>
+                        </video>
+                        <div class="mt-2 text-center">
+                            <small class="text-gray-500">Video path: {{ video.path }}</small><br>
+                            <small class="text-gray-500">If video doesn't play, try downloading it or opening in a new tab: <a href="{{ video.path }}" target="_blank" class="text-blue-600 underline">Open Video</a></small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="text-gray-400 text-6xl mb-4">🎬</div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No Videos Generated Yet</h3>
+                    <p class="text-gray-500 mb-4">Upload a video or multiple images to generate animation videos.</p>
+                    <a href="/" class="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                        Generate Your First Animation
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
