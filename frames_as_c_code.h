@@ -34,3 +34,6 @@ extern const animation_frame test1[240];
 extern const animation_frame test2[240];
 extern const animation_frame test3gridsize[240];
 
+extern const animation_frame my_animation_claude[1];
+extern const animation_frame my_animation_claudeee[1];
+extern const animation_frame my_animation_claud[1];
