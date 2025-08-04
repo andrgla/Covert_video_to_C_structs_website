@@ -15,6 +15,7 @@ import subprocess
 GRID_WIDTH = 18
 GRID_HEIGHT = 11
 CELL_WIDTH = 50 # Affects the output image size, not the data.
+CELL_ASPECT_RATIO = 1.6 # Height/Width ratio for each cell (configurable aspect ratio)
 
 # -- Sigmoid Contrast Enhancement --
 # k: Controls the steepness of the contrast curve.
@@ -22,13 +23,13 @@ SIGMOID_K = 0.042
 # center: The brightness value (0-255) that is the midpoint of the curve.
 SIGMOID_CENTER = 175.0
 # on: A master switch to turn contrast enhancement on or off.
-ENHANCE_CONTRAST = True
+ENHANCE_CONTRAST = True  # Re-enabled with fixed filtering
 
 # -- Dark Pixel Filtering --
 # threshold: Pixels at or below this brightness (0-255) will be set to 0.
-FILTER_THRESHOLD = 10
+FILTER_THRESHOLD = 5  # Less aggressive - was 10
 # dimming_threshold: Pixels between FILTER_THRESHOLD and this value will be dimmed.
-DIMMING_THRESHOLD = 30
+DIMMING_THRESHOLD = 15  # Less aggressive - was 30
 
 # =============================================================================
 # FFMPEG AND VIDEO CONVERSION
@@ -118,10 +119,13 @@ def filter_dark_pixels(small_pixelated, threshold=10, dimming_threshold=30, grid
             if not isinstance(brightness, int) or brightness == 0:
                 continue
             if brightness <= threshold:
+                # Set very dark pixels to black
                 filtered_image.putpixel((x, y), 0)
             elif threshold < brightness <= dimming_threshold:
-                new_brightness = brightness - (brightness**2 * (1 / dimming_threshold))
-                filtered_image.putpixel((x, y), int(max(0, new_brightness)))
+                # Gentle linear dimming instead of aggressive quadratic
+                # Reduce brightness by 30% in the dimming range
+                new_brightness = int(brightness * 0.7)
+                filtered_image.putpixel((x, y), max(0, new_brightness))
     return filtered_image
 
 def enhance_contrast_if_many_active(frames, k=0.042, center=175.0, on=True, grid_width=18, grid_height=11):
@@ -148,13 +152,15 @@ def process_image(input_path, output_path, return_pixelated=False, settings=None
             'grid_width': GRID_WIDTH,
             'grid_height': GRID_HEIGHT,
             'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD
+            'dimming_threshold': DIMMING_THRESHOLD,
+            'cell_aspect_ratio': CELL_ASPECT_RATIO
         }
     
     grid_width = settings.get('grid_width', GRID_WIDTH)
     grid_height = settings.get('grid_height', GRID_HEIGHT)
     filter_threshold = settings.get('filter_threshold', FILTER_THRESHOLD)
     dimming_threshold = settings.get('dimming_threshold', DIMMING_THRESHOLD)
+    cell_aspect_ratio = settings.get('cell_aspect_ratio', CELL_ASPECT_RATIO)
     
     try:
         original_img = Image.open(input_path)
@@ -165,7 +171,7 @@ def process_image(input_path, output_path, return_pixelated=False, settings=None
         print(f"Error opening or processing image: {e}")
         return
 
-    cell_height = int(CELL_WIDTH * 1.6)
+    cell_height = int(CELL_WIDTH * cell_aspect_ratio)
     canvas_width = grid_width * CELL_WIDTH
     canvas_height = grid_height * cell_height
 
@@ -183,14 +189,133 @@ def process_image(input_path, output_path, return_pixelated=False, settings=None
     background.paste(resized_img, (paste_x, paste_y))
 
     small_pixelated = background.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
-    small_pixelated = filter_dark_pixels(small_pixelated, filter_threshold, dimming_threshold, grid_width, grid_height)
-    final_image = small_pixelated.resize((canvas_width, canvas_height), Image.Resampling.NEAREST)
+    
+    # Save the raw pixelated image (before filtering) for comparison
+    raw_preview_scale = 10
+    # Maintain the correct cell aspect ratio (width:height = configurable)
+    preview_cell_width = raw_preview_scale
+    preview_cell_height = int(raw_preview_scale * cell_aspect_ratio)
+    raw_preview = small_pixelated.resize(
+        (grid_width * preview_cell_width, grid_height * preview_cell_height), 
+        Image.Resampling.NEAREST
+    )
+    base_name = os.path.splitext(output_path)[0]
+    raw_preview_path = f"{base_name}_raw.png"
+    raw_preview.save(raw_preview_path)
+    print(f"Raw pixelated preview saved: {raw_preview_path}")
+    print(f"   📐 Preview dimensions: {grid_width * preview_cell_width}x{grid_height * preview_cell_height}")
+    print(f"   📊 Cell aspect ratio: {preview_cell_width}:{preview_cell_height} (1:{cell_aspect_ratio})")
+    
+    # Apply filtering with debug output
+    print(f"Applying filtering - Threshold: {filter_threshold}, Dimming: {dimming_threshold}")
+    
+    # Debug: Show pixel stats before filtering
+    raw_pixels = [small_pixelated.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
+    print(f"   📊 Before filtering - Min: {min(raw_pixels)}, Max: {max(raw_pixels)}, Avg: {sum(raw_pixels)/len(raw_pixels):.1f}")
+    
+    small_pixelated_filtered = filter_dark_pixels(small_pixelated, filter_threshold, dimming_threshold, grid_width, grid_height)
+    
+    # Debug: Show pixel stats after filtering
+    filtered_pixels = [small_pixelated_filtered.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
+    print(f"   📊 After filtering - Min: {min(filtered_pixels)}, Max: {max(filtered_pixels)}, Avg: {sum(filtered_pixels)/len(filtered_pixels):.1f}")
+    
+    # Count pixels affected by filtering for debug
+    pixels_changed = 0
+    for y in range(grid_height):
+        for x in range(grid_width):
+            original = small_pixelated.getpixel((x, y))
+            filtered = small_pixelated_filtered.getpixel((x, y))
+            if original != filtered:
+                pixels_changed += 1
+    print(f"Filtering changed {pixels_changed} out of {grid_width * grid_height} pixels")
+    
+    # Apply contrast enhancement if enabled (after filtering but before final output)
+    enhance_contrast = settings.get('enhance_contrast', ENHANCE_CONTRAST)
+    if enhance_contrast:
+        sigmoid_k = settings.get('sigmoid_k', SIGMOID_K)
+        sigmoid_center = settings.get('sigmoid_center', SIGMOID_CENTER)
+        print(f"Applying contrast enhancement - K: {sigmoid_k}, Center: {sigmoid_center}")
+        
+        # Apply sigmoid contrast enhancement
+        enhanced_frame = small_pixelated_filtered.copy()
+        pixels_enhanced = 0
+        for y in range(grid_height):
+            for x in range(grid_width):
+                val = enhanced_frame.getpixel((x, y))
+                x_f = float(val)
+                sigmoid = 1.0 / (1.0 + math.exp(-sigmoid_k * (x_f - sigmoid_center)))
+                new_val = int(sigmoid * 255.0)
+                if new_val != val:
+                    pixels_enhanced += 1
+                enhanced_frame.putpixel((x, y), new_val)
+        
+        # Debug: Show pixel stats after contrast enhancement
+        enhanced_pixels = [enhanced_frame.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
+        print(f"   📊 After contrast - Min: {min(enhanced_pixels)}, Max: {max(enhanced_pixels)}, Avg: {sum(enhanced_pixels)/len(enhanced_pixels):.1f}")
+        print(f"Contrast enhancement changed {pixels_enhanced} out of {grid_width * grid_height} pixels")
+        small_pixelated_final = enhanced_frame
+    else:
+        print("Contrast enhancement disabled")
+        small_pixelated_final = small_pixelated_filtered
+    
+    # Debug: Show pixel stats for final result
+    final_pixels = [small_pixelated_final.getpixel((x, y)) for y in range(grid_height) for x in range(grid_width)]
+    print(f"   📊 FINAL RESULT - Min: {min(final_pixels)}, Max: {max(final_pixels)}, Avg: {sum(final_pixels)/len(final_pixels):.1f}")
+    
+    final_image = small_pixelated_final.resize((canvas_width, canvas_height), Image.Resampling.NEAREST)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     final_image.save(output_path)
+    
+    # Save a preview image that shows the final processed result with correct aspect ratio
+    preview_scale = 10
+    preview_cell_width = preview_scale
+    preview_cell_height = int(preview_scale * cell_aspect_ratio)
+    preview_image = small_pixelated_final.resize(
+        (grid_width * preview_cell_width, grid_height * preview_cell_height), 
+        Image.Resampling.NEAREST
+    )
+    
+    preview_path = f"{base_name}_final.png"
+    preview_image.save(preview_path)
+    print(f"Final processed preview saved: {preview_path}")
 
     if return_pixelated:
-        return small_pixelated
+        return small_pixelated_final
+
+def save_enhanced_preview(enhanced_frame, output_dir, filename, settings=None):
+    """Save a preview image that shows the final processed result with contrast enhancement."""
+    if settings is None:
+        settings = {
+            'grid_width': GRID_WIDTH, 
+            'grid_height': GRID_HEIGHT,
+            'cell_aspect_ratio': CELL_ASPECT_RATIO
+        }
+    
+    grid_width = settings.get('grid_width', GRID_WIDTH)
+    grid_height = settings.get('grid_height', GRID_HEIGHT)
+    cell_aspect_ratio = settings.get('cell_aspect_ratio', CELL_ASPECT_RATIO)
+    
+    print(f"💫 Saving enhanced preview for {filename} with contrast settings:")
+    print(f"   - Enhance contrast: {settings.get('enhance_contrast', True)}")
+    print(f"   - Sigmoid K: {settings.get('sigmoid_k', 0.042)}")
+    print(f"   - Sigmoid center: {settings.get('sigmoid_center', 175.0)}")
+    print(f"   - Cell aspect ratio: 1:{cell_aspect_ratio}")
+    
+    # Scale up the enhanced frame to a reasonable preview size with correct aspect ratio
+    preview_scale = 10
+    preview_cell_width = preview_scale
+    preview_cell_height = int(preview_scale * cell_aspect_ratio)
+    preview_image = enhanced_frame.resize(
+        (grid_width * preview_cell_width, grid_height * preview_cell_height), 
+        Image.Resampling.NEAREST
+    )
+    
+    # Save the enhanced preview
+    base_name = os.path.splitext(filename)[0]
+    preview_path = os.path.join(output_dir, f"{base_name}_final_enhanced.png")
+    preview_image.save(preview_path)
+    print(f"✨ Final enhanced preview saved: {preview_path}")
 
 # ===============================================
 # C CODE GENERATION
@@ -267,7 +392,8 @@ def process_frames(input_dir, struct_name, settings=None):
             'sigmoid_k': SIGMOID_K,
             'sigmoid_center': SIGMOID_CENTER,
             'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD
+            'dimming_threshold': DIMMING_THRESHOLD,
+            'cell_aspect_ratio': CELL_ASPECT_RATIO
         }
     
     frame_data_list = []
@@ -297,20 +423,17 @@ def process_frames(input_dir, struct_name, settings=None):
         print()
 
     if frame_data_list:
-        print("Applying contrast enhancement...")
-        frame_images = [fd[0] for fd in frame_data_list]
-        enhanced_frames = enhance_contrast_if_many_active(
-            frame_images, 
-            settings.get('sigmoid_k', SIGMOID_K), 
-            settings.get('sigmoid_center', SIGMOID_CENTER), 
-            settings.get('enhance_contrast', ENHANCE_CONTRAST),
-            settings.get('grid_width', GRID_WIDTH),
-            settings.get('grid_height', GRID_HEIGHT)
-        )
-        enhanced_frame_data_list = [(enhanced_frames[i], fd[1]) for i, fd in enumerate(frame_data_list)]
+        print("Note: Contrast enhancement is now handled within process_image()")
+        print("No need to apply it again here to avoid double processing")
+        
+        # Save previews for first few frames
+        num_previews = min(5, len(frame_data_list))  # Save up to 5 previews
+        for i in range(num_previews):
+            filename = f"frame_{i:05d}.png"
+            save_enhanced_preview(frame_data_list[i][0], output_animation_dir, filename, settings)
         
         c_output_path = f"frames_as_c_code/{struct_name}.c"
-        generate_c_struct_array(enhanced_frame_data_list, c_output_path, struct_name, settings)
+        generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         print(f"\n✅ Successfully created animation '{struct_name}' with {len(frame_data_list)} frames")
         print(f"📁 C code saved to: {c_output_path}")
@@ -330,7 +453,8 @@ def process_image_and_generate_c_code(image_path, struct_name, settings=None):
             'sigmoid_k': SIGMOID_K,
             'sigmoid_center': SIGMOID_CENTER,
             'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD
+            'dimming_threshold': DIMMING_THRESHOLD,
+            'cell_aspect_ratio': CELL_ASPECT_RATIO
         }
     
     # Create a temporary directory to hold the single image
@@ -350,21 +474,17 @@ def process_image_and_generate_c_code(image_path, struct_name, settings=None):
         # Create frame data list with single frame
         frame_data_list = [(small_pixelated, 0)]
         
-        # Apply contrast enhancement
-        frame_images = [fd[0] for fd in frame_data_list]
-        enhanced_frames = enhance_contrast_if_many_active(
-            frame_images, 
-            settings.get('sigmoid_k', SIGMOID_K), 
-            settings.get('sigmoid_center', SIGMOID_CENTER), 
-            settings.get('enhance_contrast', ENHANCE_CONTRAST),
-            settings.get('grid_width', GRID_WIDTH),
-            settings.get('grid_height', GRID_HEIGHT)
-        )
-        enhanced_frame_data_list = [(enhanced_frames[i], fd[1]) for i, fd in enumerate(frame_data_list)]
+        # Note: Contrast enhancement is now handled within process_image()
+        # No need to apply it again here to avoid double processing
+        
+        # Save a preview for single image
+        temp_output_dir = os.path.join("output_images", struct_name)
+        os.makedirs(temp_output_dir, exist_ok=True)
+        save_enhanced_preview(small_pixelated, temp_output_dir, "single_image.png", settings)
         
         # Generate C code
         c_output_path = f"frames_as_c_code/{struct_name}.c"
-        generate_c_struct_array(enhanced_frame_data_list, c_output_path, struct_name, settings)
+        generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Read and return the generated C code
         with open(c_output_path, 'r') as f:
@@ -388,7 +508,8 @@ def process_directory_and_generate_c_code(directory_path, struct_name, settings=
             'sigmoid_k': SIGMOID_K,
             'sigmoid_center': SIGMOID_CENTER,
             'filter_threshold': FILTER_THRESHOLD,
-            'dimming_threshold': DIMMING_THRESHOLD
+            'dimming_threshold': DIMMING_THRESHOLD,
+            'cell_aspect_ratio': CELL_ASPECT_RATIO
         }
     
     try:
@@ -414,21 +535,18 @@ def process_directory_and_generate_c_code(directory_path, struct_name, settings=
         if not frame_data_list:
             return "Error: Could not process any images."
         
-        # Apply contrast enhancement
-        frame_images = [fd[0] for fd in frame_data_list]
-        enhanced_frames = enhance_contrast_if_many_active(
-            frame_images, 
-            settings.get('sigmoid_k', SIGMOID_K), 
-            settings.get('sigmoid_center', SIGMOID_CENTER), 
-            settings.get('enhance_contrast', ENHANCE_CONTRAST),
-            settings.get('grid_width', GRID_WIDTH),
-            settings.get('grid_height', GRID_HEIGHT)
-        )
-        enhanced_frame_data_list = [(enhanced_frames[i], fd[1]) for i, fd in enumerate(frame_data_list)]
+        # Note: Contrast enhancement is now handled within process_image()
+        # No need to apply it again here to avoid double processing
+        
+        # Save previews for first few frames to show processing effect
+        num_previews = min(5, len(frame_data_list))  # Save up to 5 previews
+        for i in range(num_previews):
+            filename = f"frame_{i:05d}.png"
+            save_enhanced_preview(frame_data_list[i][0], output_animation_dir, filename, settings)
         
         # Generate C code
         c_output_path = f"frames_as_c_code/{struct_name}.c"
-        generate_c_struct_array(enhanced_frame_data_list, c_output_path, struct_name, settings)
+        generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Read and return the generated C code
         with open(c_output_path, 'r') as f:

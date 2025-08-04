@@ -57,8 +57,14 @@ def upload_file():
             'sigmoid_center': float(request.form.get('sigmoid_center', 175.0)),
             'filter_threshold': int(request.form.get('filter_threshold', 10)),
             'dimming_threshold': int(request.form.get('dimming_threshold', 30)),
-            'fps': int(request.form.get('fps', 30))
+            'fps': int(request.form.get('fps', 30)),
+            'cell_aspect_ratio': float(request.form.get('cell_aspect_ratio', 1.6))
         }
+        
+        # Debug output to see what settings are being used
+        print(f"🔧 Processing with settings: {settings}")
+        print(f"🎯 Struct name: {struct_name}")
+        print(f"📁 File: {filename}")
 
         try:
             # --- Logic to handle different file types ---
