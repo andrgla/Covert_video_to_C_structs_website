@@ -1,3 +1,5 @@
+// frontend/src/pages/HomePage.jsx
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -17,17 +19,17 @@ const initialFormData = {
   generate_video: true,
 };
 
-function HomePage() {
+// Accept 'result' and 'setResult' as props from the App component
+function HomePage({ result, setResult }) {
   // State for UI interactivity
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  // State for form data and submission
+  // State for form data and submission (isLoading and error are still local)
   const [selectedFile, setSelectedFile] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null); // Will hold { c_code, video_path }
-
+  
   // --- Event Handlers ---
 
   const handleToggleSettings = () => setIsSettingsOpen(!isSettingsOpen);
@@ -36,7 +38,6 @@ function HomePage() {
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    // Use the 'checked' property for checkboxes, otherwise use 'value'
     const val = type === 'checkbox' ? checked : value;
     setFormData(prev => ({ ...prev, [name]: val }));
   };
@@ -44,18 +45,16 @@ function HomePage() {
   const handleResetDefaults = () => setFormData(initialFormData);
 
   const handleSubmit = async (event) => {
-    event.preventDefault(); // Prevent the browser from reloading the page
+    event.preventDefault();
     if (!selectedFile) {
       setError('Please select a file to upload.');
       return;
     }
 
-    // Reset previous results and start loading
     setIsLoading(true);
     setError(null);
-    setResult(null);
+    setResult(null); // Use the prop to clear previous results
 
-    // Create a FormData object to send the file and form data
     const data = new FormData();
     data.append('file', selectedFile);
     Object.keys(formData).forEach(key => {
@@ -63,7 +62,6 @@ function HomePage() {
     });
 
     try {
-      // The vite.config.js proxy will forward this request to your Python server
       const response = await fetch('/upload', { method: 'POST', body: data });
       
       if (!response.ok) {
@@ -72,18 +70,17 @@ function HomePage() {
       }
       
       const resData = await response.json();
-      setResult(resData); // Save the successful result
+      setResult(resData); // Use the prop to save the successful result in the parent state
     } catch (err) {
-      setError(err.message); // Save the error message
+      setError(err.message);
     } finally {
-      setIsLoading(false); // Stop loading
+      setIsLoading(false);
     }
   };
   
   const copyToClipboard = () => {
     if (result && result.c_code) {
       navigator.clipboard.writeText(result.c_code);
-      // You could add a visual "Copied!" confirmation here if you like
     }
   };
 

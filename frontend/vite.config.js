@@ -9,6 +9,8 @@ export default defineConfig({
     proxy: {
       '/upload': 'http://127.0.0.1:5000',
       '/api': 'http://127.0.0.1:5000',
+      // Add this new rule to forward video requests
+      '/video': 'http://127.0.0.1:5000',
     }
   }
 })
