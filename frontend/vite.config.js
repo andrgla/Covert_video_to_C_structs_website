@@ -7,9 +7,13 @@ export default defineConfig({
   server: {
     // This proxy tells Vite to forward API requests to your Python backend
     proxy: {
+      // For the main file upload
       '/upload': 'http://127.0.0.1:5000',
+      
+      // For all API calls (like listing videos and the new preview)
       '/api': 'http://127.0.0.1:5000',
-      // Add this new rule to forward video requests
+      
+      // For serving the generated video files
       '/video': 'http://127.0.0.1:5000',
     }
   }

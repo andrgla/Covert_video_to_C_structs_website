@@ -1,1 +1,8 @@
+/* frontend/src/index.css */
 @import "tailwindcss";
+
+body {
+    background-color: #111827; /* brand-dark-dark */
+    color: #d1d5db; /* gray-300 */
+    font-family: 'Inter', sans-serif;
+}

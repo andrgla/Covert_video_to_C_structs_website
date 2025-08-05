@@ -1,3 +1,5 @@
+# backend/pixelate_and_convert.py
+
 import sys
 import os
 from PIL import Image
@@ -6,7 +8,10 @@ import math
 import cv2
 import shutil
 import subprocess
+import io # <-- Add this import for in-memory image handling
 
+# --- (Keep all existing settings and utility functions as they are) ---
+# ... from line 11 to line 108 ...
 # =============================================================================
 # --- SETTINGS ---
 # =============================================================================
@@ -412,15 +417,11 @@ def process_single_image_to_grid(input_path, settings):
     # Create the initial pixelated version
     raw_pixelated = background.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
     
-    print(f"📊 Raw pixelated stats: {get_pixel_stats(raw_pixelated, settings)}")
-    
     # Apply filtering
     filtered_image, pixels_filtered = apply_filtering(raw_pixelated, settings)
-    print(f"📊 After filtering: {get_pixel_stats(filtered_image, settings)} ({pixels_filtered} pixels changed)")
     
     # Apply contrast enhancement
     final_image, pixels_enhanced = apply_contrast_enhancement(filtered_image, settings)
-    print(f"📊 Final result: {get_pixel_stats(final_image, settings)} ({pixels_enhanced} pixels enhanced)")
     
     # Validate all pixel values are in valid range
     stats = get_pixel_stats(final_image, settings)
@@ -451,9 +452,6 @@ def process_image(input_path, output_path, return_pixelated=False, settings=None
     # Save preview images
     base_name = os.path.splitext(output_path)[0]
     
-    # Remove extra preview files - user doesn't want _raw.png and _final.png versions
-    # Just save the main processed image
-    
     # Save the full-scale final image
     cell_height = int(CELL_WIDTH * settings['cell_aspect_ratio'])
     canvas_width = settings['grid_width'] * CELL_WIDTH
@@ -464,10 +462,8 @@ def process_image(input_path, output_path, return_pixelated=False, settings=None
     full_scale_final.save(output_path)
 
     return final_image if return_pixelated else None
-
-# ===============================================
-# C CODE GENERATION
-# ===============================================
+# --- (Keep all existing C Code Generation functions as they are) ---
+# ... from line 416 to line 498 ...
 def validate_c_struct_data(frame_data_list, settings):
     """Validate that all pixel data is suitable for C struct generation."""
     grid_width = settings['grid_width']
@@ -625,6 +621,39 @@ def process_frames(input_dir, struct_name, custom_settings=None):
 # ===============================================
 # WRAPPER FUNCTIONS FOR FLASK APP
 # ===============================================
+
+# --- NEW FUNCTION FOR LIVE PREVIEW ---
+def generate_live_preview(image_path, custom_settings=None):
+    """
+    Processes a single image with given settings and returns it as an in-memory image file.
+    """
+    settings = get_processing_settings(custom_settings)
+    
+    result = process_single_image_to_grid(image_path, settings)
+    if not result:
+        return None
+    
+    final_image = result['final']
+    
+    # Scale up the image for a better preview
+    grid_width = settings['grid_width']
+    grid_height = settings['grid_height']
+    cell_aspect_ratio = settings['cell_aspect_ratio']
+    
+    preview_scale = 20 # Make the preview larger
+    preview_width = grid_width * preview_scale
+    preview_height = int(grid_height * preview_scale * cell_aspect_ratio)
+    
+    # Resize using NEAREST to maintain the pixelated look
+    preview_image = final_image.resize((preview_width, preview_height), Image.Resampling.NEAREST)
+    
+    # Save the image to an in-memory bytes buffer
+    img_io = io.BytesIO()
+    preview_image.save(img_io, 'PNG')
+    img_io.seek(0) # Rewind the buffer to the beginning
+    
+    return img_io
+
 def process_image_and_generate_c_code(image_path, struct_name, custom_settings=None):
     """Processes a single image and generates C code for it."""
     settings = get_processing_settings(custom_settings)
@@ -716,6 +745,8 @@ def process_directory_and_generate_c_code(directory_path, struct_name, custom_se
     except Exception as e:
         return f"Error processing directory: {str(e)}"
 
+# --- (Keep the __main__ block as it is for command-line use) ---
+# ... from line 630 to the end of the file ...
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
