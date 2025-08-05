@@ -4,7 +4,7 @@ import shutil
 import zipfile
 from werkzeug.utils import secure_filename
 # Import the functions from your original script
-from pixelate_and_convert import slice_video_to_frames, process_image_and_generate_c_code, process_directory_and_generate_c_code
+from backend.pixelate_and_convert import slice_video_to_frames, process_image_and_generate_c_code, process_directory_and_generate_c_code
 
 # --- Flask App Setup ---
 app = Flask(__name__)
@@ -139,7 +139,7 @@ def list_videos():
     Lists all generated animation videos.
     """
     videos = []
-    output_base = "output_images"
+    output_base = "backend/output_images"
     
     if os.path.exists(output_base):
         for folder in os.listdir(output_base):
@@ -161,7 +161,7 @@ def serve_video(folder, filename):
     """
     Serves a generated video file with proper headers for browser playback.
     """
-    video_path = os.path.join("output_images", folder)
+    video_path = os.path.join("backend/output_images", folder)
     full_video_path = os.path.join(video_path, filename)
     
     if not os.path.exists(full_video_path):
