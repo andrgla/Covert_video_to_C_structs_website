@@ -30,3 +30,19 @@ typedef struct {
 #endif // FRAMES_AS_C_CODE_H
 
 extern const animation_frame scary_man[240];
+extern const animation_frame test1[240];
+extern const animation_frame test2[240];
+extern const animation_frame test3gridsize[240];
+
+extern const animation_frame my_animation_claude[1];
+extern const animation_frame my_animation_claudeee[1];
+extern const animation_frame my_animation_claud[1];
+extern const animation_frame video1[240];
+extern const animation_frame video2[240];
+extern const animation_frame video[240];
+extern const animation_frame video[80];
+extern const animation_frame tiktok[150];
+extern const animation_frame my_animation[407];
+extern const animation_frame my_animation[83];
+extern const animation_frame my_animation[408];
+extern const animation_frame my_animation[240];
