@@ -1,1 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+*.egg-info/
+
+# Uploads and Generated Media
+# These are the biggest cause of repo bloat
+uploads/
+output_images/
+temp_*
+
+# Frontend Dependencies (Critical)
+frontend/node_modules/
+frontend/dist/
+frontend/.DS_Store
+
+# IDE and OS files
+.vscode/
+.idea/
 .DS_Store
