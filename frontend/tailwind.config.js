@@ -20,7 +20,14 @@ export default {
         'brand-text': '#ffffff',        
         'brand-ui-bg': '#323237',       // New color for input fields/panels
         'brand-dark-light': '#4b5563', 
-        'brand-dark': '#1f2937',       
+        'brand-dark': '#1f2937',
+        'brand-input': '#525863',       // Much brighter for input fields
+        // Custom gradient colors
+        'gradient-purple': '#8c52ff',
+        'gradient-orange': '#ff914d',       
+      },
+      backgroundImage: {
+        'gradient-button': 'linear-gradient(90deg, #8c52ff, #ff914d)',
       }
     },
   },

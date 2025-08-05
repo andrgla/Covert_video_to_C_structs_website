@@ -149,10 +149,10 @@ function HomePage({ result, setResult }) {
         {/* File Upload */}
         <div>
           <h2 className="text-lg font-semibold mb-2 text-brand-header">1. Upload file</h2>
-          <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-brand-ui-bg hover:bg-brand-dark-light transition">
+          <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:bg-brand-dark-light transition" style={{backgroundColor: '#323237'}}>
             <div className="flex flex-col items-center justify-center">
-              <p className="text-sm text-gray-400"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-              <p className="text-xs text-gray-500 mt-1">MP4, MOV, PNG, or JPG</p>
+              <p className="text-sm text-gray-300"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+              <p className="text-xs text-gray-400 mt-1">MP4, MOV, PNG, or JPG</p>
             </div>
             <input id="file-upload" name="file" type="file" className="hidden" onChange={handleFileChange} />
           </label>
@@ -162,7 +162,7 @@ function HomePage({ result, setResult }) {
         {/* C Struct Name */}
         <div>
           <h2 className="text-lg font-semibold mb-2 text-brand-header">2. C Struct Name</h2>
-          <input type="text" name="struct_name" id="struct_name" value={formData.struct_name} onChange={handleChange} className="w-full px-3 py-2 bg-brand-ui-bg border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-accent sm:text-sm" />
+          <input type="text" name="struct_name" id="struct_name" value={formData.struct_name} onChange={handleChange} className="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-accent sm:text-sm text-white placeholder-gray-400" style={{backgroundColor: '#323237'}} />
         </div>
 
         {/* --- Advanced Settings & Live Preview --- */}
@@ -235,7 +235,15 @@ function HomePage({ result, setResult }) {
 
         {/* Submit Button & Video Link */}
         <div className="text-center pt-4">
-          <button type="submit" disabled={isLoading} className="font-orbitron w-full md:w-auto text-xl font-bold py-3 px-10 rounded-lg text-white bg-brand-accent hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition disabled:bg-gray-500">
+          <button 
+            type="submit" 
+            disabled={isLoading} 
+            className="font-orbitron w-full md:w-auto text-xl font-bold py-3 px-10 rounded-lg text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition disabled:bg-gray-500"
+            style={{
+              background: isLoading ? '#6b7280' : 'linear-gradient(90deg, #8c52ff, #ff914d)',
+              border: 'none'
+            }}
+          >
             {isLoading ? 'GENERATING...' : 'GENERATE C STRUCT'}
           </button>
           <div className="mt-4">
@@ -260,11 +268,11 @@ function HomePage({ result, setResult }) {
         <div className="mt-10">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-2xl font-bold text-brand-header">Generated C Code</h2>
-            <button onClick={copyToClipboard} className="inline-flex items-center px-4 py-2 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 bg-brand-ui-bg hover:bg-brand-dark-light">
+            <button onClick={copyToClipboard} className="inline-flex items-center px-4 py-2 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 hover:bg-brand-dark-light" style={{backgroundColor: '#323237'}}>
               Copy Code
             </button>
           </div>
-          <pre className="bg-brand-dark text-gray-300 p-4 rounded-lg overflow-x-auto text-sm"><code>{result.c_code}</code></pre>
+          <pre className="text-gray-300 p-4 rounded-lg overflow-x-auto text-sm" style={{backgroundColor: '#323237'}}><code>{result.c_code}</code></pre>
         </div>
       )}
       {/* --- END OF RESTORED SECTION --- */}
