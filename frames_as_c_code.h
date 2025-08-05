@@ -45,3 +45,4 @@ extern const animation_frame tiktok[150];
 extern const animation_frame my_animation[407];
 extern const animation_frame my_animation[83];
 extern const animation_frame my_animation[408];
+extern const animation_frame my_animation[240];
