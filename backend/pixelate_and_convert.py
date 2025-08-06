@@ -542,7 +542,8 @@ def generate_c_struct_array(frame_data_list, c_output_path, struct_variable_name
     print("🔗 The C struct contains the same data as the main .png images")
 
     # Update header file
-    header_path = os.path.join(os.path.dirname(c_output_path), "..", "frames_as_c_code.h")
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    header_path = os.path.join(backend_dir, "frames_as_c_code.h")
     declaration = f"extern const animation_frame {struct_variable_name}[{len(frame_data_list)}];\n"
     try:
         with open(header_path, 'r') as h_file:
@@ -568,7 +569,9 @@ def process_frames(input_dir, struct_name, custom_settings=None):
     settings = get_processing_settings(custom_settings)
     
     frame_data_list = []
-    output_animation_dir = os.path.join("output_images", struct_name)
+    # Use path relative to backend folder where this script is located
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    output_animation_dir = os.path.join(backend_dir, "output_images", struct_name)
     os.makedirs(output_animation_dir, exist_ok=True)
     
     filenames = sorted([f for f in os.listdir(input_dir) if f.lower().endswith((".png", ".jpg", ".jpeg"))], key=extract_number)
@@ -598,7 +601,8 @@ def process_frames(input_dir, struct_name, custom_settings=None):
         print()
 
     if frame_data_list:
-        c_output_path = f"frames_as_c_code/{struct_name}.c"
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        c_output_path = os.path.join(backend_dir, "frames_as_c_code", f"{struct_name}.c")
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Generate video from preview images
@@ -676,7 +680,8 @@ def process_image_and_generate_c_code(image_path, struct_name, custom_settings=N
         frame_data_list = [(final_pixelated, 0)]
         
         # Generate C code with validation
-        c_output_path = f"frames_as_c_code/{struct_name}.c"
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        c_output_path = os.path.join(backend_dir, "frames_as_c_code", f"{struct_name}.c")
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Note: Video generation skipped for single images (need multiple frames)
@@ -699,7 +704,9 @@ def process_directory_and_generate_c_code(directory_path, struct_name, custom_se
     
     try:
         frame_data_list = []
-        output_animation_dir = os.path.join("output_images", struct_name)
+        # Use path relative to backend folder where this script is located
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        output_animation_dir = os.path.join(backend_dir, "output_images", struct_name)
         os.makedirs(output_animation_dir, exist_ok=True)
         
         filenames = sorted([f for f in os.listdir(directory_path) if f.lower().endswith((".png", ".jpg", ".jpeg"))], key=extract_number)
@@ -720,7 +727,8 @@ def process_directory_and_generate_c_code(directory_path, struct_name, custom_se
             return "Error: Could not process any images."
         
         # Generate C code
-        c_output_path = f"frames_as_c_code/{struct_name}.c"
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        c_output_path = os.path.join(backend_dir, "frames_as_c_code", f"{struct_name}.c")
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Generate video from preview images if we have multiple frames

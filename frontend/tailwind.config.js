@@ -22,12 +22,13 @@ export default {
         'brand-dark-light': '#4b5563', 
         'brand-dark': '#1f2937',
         'brand-input': '#525863',       // Much brighter for input fields
+        'brand-button': '#5170ff',
         // Custom gradient colors
         'gradient-purple': '#8c52ff',
         'gradient-orange': '#ff914d',       
       },
       backgroundImage: {
-        'gradient-button': 'linear-gradient(90deg, #8c52ff, #ff914d)',
+        'gradient-button': '#5170ff',
       }
     },
   },

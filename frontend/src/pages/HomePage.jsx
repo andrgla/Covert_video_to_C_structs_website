@@ -16,7 +16,7 @@ const useDebounce = (callback, delay) => {
 // Reusable collapsible section component
 const SettingsSection = ({ title, children }) => {
   return (
-    <details className="bg-brand-ui-bg rounded-lg group" open>
+    <details className="bg-brand-ui-bg rounded-lg group">
       <summary className="w-full p-3 text-left transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-accent">
         <span className="text-sm font-medium text-gray-300">{title}</span>
       </summary>
@@ -221,7 +221,7 @@ function HomePage({ result, setResult }) {
                     <button type="button" onClick={handleResetDefaults} className="text-xs text-gray-400 hover:text-white underline">Reset to Defaults</button>
                 </div>
 
-                <div className="flex flex-col items-center justify-center bg-brand-ui-bg p-2 rounded-lg border border-gray-700">
+                <div className="flex flex-col items-center justify-center bg-brand-ui-bg p-2 rounded-lg">
                     <div className="w-full h-48 flex items-center justify-center">
                         {isPreviewLoading ? (
                             <p className="text-gray-500 text-xs">Loading Preview...</p>
@@ -240,7 +240,7 @@ function HomePage({ result, setResult }) {
             disabled={isLoading} 
             className="font-orbitron w-full md:w-auto text-xl font-bold py-3 px-10 rounded-lg text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition disabled:bg-gray-500"
             style={{
-              background: isLoading ? '#6b7280' : 'linear-gradient(90deg, #8c52ff, #ff914d)',
+              background: '#5170ff',
               border: 'none'
             }}
           >
@@ -248,7 +248,7 @@ function HomePage({ result, setResult }) {
           </button>
           <div className="mt-4">
              <Link to="/videos" className="text-sm text-gray-400 hover:text-white underline">
-                See videos
+                See videos 
              </Link>
           </div>
         </div>
