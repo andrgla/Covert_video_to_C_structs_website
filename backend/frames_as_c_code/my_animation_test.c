@@ -2,7 +2,7 @@
 // This C struct contains the processed pixel data from the main .png images.
 #include "frames_as_c_code.h"
 
-const animation_frame my_animation[83] = {
+const animation_frame my_animation_test[83] = {
     {
         .frame_number = 0,
         .num_pixels = 111,

@@ -11,6 +11,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         orbitron: ['Orbitron', 'sans-serif'],
+        mono: ['Space Mono', 'monospace'], // Add this line
       },
       colors: {
         // Your updated color palette
@@ -23,12 +24,14 @@ export default {
         'brand-dark': '#1f2937',
         'brand-input': '#525863',       // Much brighter for input fields
         'brand-button': '#5170ff',
+        'brand-success': '#91d16c',     // Matcha green for active states #91d16c
+        'brand-success-hover': '#76a859', // Darker matcha green for hover
         // Custom gradient colors
         'gradient-purple': '#8c52ff',
         'gradient-orange': '#ff914d',       
       },
       backgroundImage: {
-        'gradient-button': '',
+        'gradient-button': '#5170ff',
       }
     },
   },

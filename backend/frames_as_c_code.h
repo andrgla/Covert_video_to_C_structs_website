@@ -48,3 +48,5 @@ extern const animation_frame my_animation[408];
 extern const animation_frame my_animation[240];
 extern const animation_frame my_animation_1[408];
 extern const animation_frame my_animation[1036];
+extern const animation_frame my_animation_test[83];
+extern const animation_frame my_animation[28];

@@ -606,7 +606,7 @@ def process_frames(input_dir, struct_name, custom_settings=None):
         generate_c_struct_array(frame_data_list, c_output_path, struct_name, settings)
         
         # Generate video from preview images
-        video_fps = settings.get('video_fps', 10)  # Use video-specific FPS
+        video_fps = settings.get('video_fps', 30)  # Use video-specific FPS
         generate_video_enabled = settings.get('generate_video', True)
         
         if generate_video_enabled:
@@ -735,7 +735,7 @@ def process_directory_and_generate_c_code(directory_path, struct_name, custom_se
         if len(frame_data_list) > 1:
             generate_video_enabled = settings.get('generate_video', True)
             if generate_video_enabled:
-                video_fps = settings.get('video_fps', 10)
+                video_fps = settings.get('video_fps', 30)
                 video_path = generate_video(output_animation_dir, struct_name, video_fps, settings)
                 if video_path:
                     print(f"🎬 Generated animation video: {os.path.basename(video_path)}")
