@@ -28,7 +28,7 @@ export default {
         'gradient-orange': '#ff914d',       
       },
       backgroundImage: {
-        'gradient-button': '#5170ff',
+        'gradient-button': '',
       }
     },
   },
