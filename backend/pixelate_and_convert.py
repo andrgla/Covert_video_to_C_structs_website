@@ -10,30 +10,20 @@ import shutil
 import subprocess
 import io # <-- Add this import for in-memory image handling
 
-# --- (Keep all existing settings and utility functions as they are) ---
-# ... from line 11 to line 108 ...
 # =============================================================================
 # --- SETTINGS ---
 # =============================================================================
 
-# -- Grid and Canvas Dimensions --
 GRID_WIDTH = 18
 GRID_HEIGHT = 11
 CELL_WIDTH = 50 # Affects the output image size, not the data.
 CELL_ASPECT_RATIO = 1.6 # Height/Width ratio for each cell (configurable aspect ratio)
 
-# -- Sigmoid Contrast Enhancement --
-# k: Controls the steepness of the contrast curve.
 SIGMOID_K = 0.042
-# center: The brightness value (0-255) that is the midpoint of the curve.
 SIGMOID_CENTER = 175.0
-# on: A master switch to turn contrast enhancement on or off.
-ENHANCE_CONTRAST = True  # Re-enabled with fixed filtering
+ENHANCE_CONTRAST = True
 
-# -- Dark Pixel Filtering --
-# threshold: Pixels at or below this brightness (0-255) will be set to 0.
 FILTER_THRESHOLD = 5  # Less aggressive - was 10
-# dimming_threshold: Pixels between FILTER_THRESHOLD and this value will be dimmed.
 DIMMING_THRESHOLD = 15  # Less aggressive - was 30
 
 # =============================================================================
@@ -56,7 +46,6 @@ def get_processing_settings(custom_settings=None):
         'dimming_threshold': DIMMING_THRESHOLD,
         'cell_aspect_ratio': CELL_ASPECT_RATIO
     }
-    
     if custom_settings:
         default_settings.update(custom_settings)
     
@@ -753,8 +742,6 @@ def process_directory_and_generate_c_code(directory_path, struct_name, custom_se
     except Exception as e:
         return f"Error processing directory: {str(e)}"
 
-# --- (Keep the __main__ block as it is for command-line use) ---
-# ... from line 630 to the end of the file ...
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
